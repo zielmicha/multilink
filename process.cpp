@@ -42,6 +42,20 @@ void Popen::call(std::function<void(int)> callback) {
     exec()->wait(callback);
 }
 
+Future<int> Popen::call() {
+    Future<int> r;
+    call(r.result_fn());
+    return r;
+}
+
+Future<unit> Popen::check_call() {
+    return call().then<unit>([](int ret) -> unit {
+            if(ret != 0)
+                throw CalledProcessError(ret);
+            return unit();
+        });
+}
+
 int Process::start_process(const Popen& options) {
     std::vector<const char*> argv;
     for(std::string item: options.arguments)

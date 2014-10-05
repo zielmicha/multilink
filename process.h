@@ -2,6 +2,7 @@
 #define PROCESS_H_
 #include <memory>
 #include "reactor.h"
+#include "future.h"
 #include <unordered_map>
 #include <vector>
 
@@ -37,6 +38,9 @@ public:
 
     std::shared_ptr<Process> exec();
     void call(std::function<void(int)> callback);
+    Future<int> call();
+    Future<unit> check_call();
+    int call_blocking();
 
     Popen& arg(std::string arg);
     Popen& args(std::vector<std::string> args);

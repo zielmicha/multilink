@@ -12,4 +12,5 @@ int main() {
         });
     reactor.run();
     LOG("finished");
+    Popen(reactor, "ls").arg(".").check_call().wait(reactor);
 }
