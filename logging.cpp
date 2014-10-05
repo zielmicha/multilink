@@ -23,6 +23,7 @@ static void handler(int sig) {
 void setup_crash_handlers() {
   signal(SIGSEGV, handler);
   signal(SIGINT, handler);
+  signal(SIGABRT, handler);
 }
 
 std::string url_encode(const std::string &value) {

@@ -3,6 +3,7 @@
 /Makefile
 /ReactorTest
 /TunTest
+/ProcessTest
 /cmake_install.cmake
 /libcrafter-examples
 /libcrafter

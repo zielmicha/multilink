@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <errno.h>
+#include <signal.h>
 
 #define LOGGER_NAME "epoll"
 #include "logging.h"
@@ -25,7 +26,7 @@ void setnonblocking(int sfd) {
 
     flags |= O_NONBLOCK;
     s = fcntl (sfd, F_SETFL, flags);
-    if (flags == -1) errno_to_exception();
+    if (s == -1) errno_to_exception();
 }
 
 EPoll::EPoll(): iterable(*this) {
@@ -46,7 +47,15 @@ void EPoll::add(int fd) {
 }
 
 const EPollIterable& EPoll::wait() {
-    event_count = epoll_wait(efd, &events[0], events.size(), -1);
+    sigset_t sigset;
+    sigemptyset(&sigset);
+    event_count = epoll_pwait(efd, &events[0], events.size(), -1, &sigset);
+    if(event_count < 0) {
+        if(errno == EINTR)
+            event_count = 0;
+        else
+            errno_to_exception();
+    }
     return iterable;
 }
 

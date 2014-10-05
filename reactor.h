@@ -33,6 +33,7 @@ class Reactor {
 private:
     EPoll epoll;
     std::unordered_map<int, FD> fds;
+    bool want_exit = false;
 public:
     Reactor(const Reactor& r) = delete;
     Reactor();
@@ -40,6 +41,7 @@ public:
     FD& take_fd(int fd);
 
     void step();
+    void exit();
     void run();
 };
 

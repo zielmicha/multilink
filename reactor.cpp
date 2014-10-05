@@ -1,8 +1,12 @@
 #include "reactor.h"
 #include "epoll.h"
+#include "signals.h"
 #include "common.h"
 #include <unistd.h>
+#include <assert.h>
 #include <algorithm>
+#define LOGGER_NAME "reactor"
+#include "logging.h"
 
 size_t FD::write(const char* data, size_t length) {
     int ret = ::write(fd, data, length);
@@ -43,8 +47,15 @@ Reactor::Reactor() {}
 
 void Reactor::step() {
     auto& result = epoll.wait();
+    Signals::call_handlers();
+
     for(EPollResult r: result) {
-        FD& fd = fds.find(r.fd)->second;
+        auto iter = fds.find(r.fd);
+        if(iter == fds.end()) {
+            LOG("epoll returned unknown fd: " << r.fd);
+            assert(0);
+        }
+        FD& fd = iter->second;
         if(r.read_ready)
             fd.on_read_ready();
         if(r.write_ready)
@@ -55,5 +66,9 @@ void Reactor::step() {
 }
 
 void Reactor::run() {
-    while(true) step();
+    while(!want_exit) step();
+}
+
+void Reactor::exit() {
+    want_exit = true;
 }
