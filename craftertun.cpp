@@ -15,7 +15,7 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 
-#include <crafter.h>
+const int MTU = 4096;
 
 Tun::Tun(Reactor& r, std::string name): reactor(r) {
     struct ifreq ifr;
@@ -34,11 +34,23 @@ Tun::Tun(Reactor& r, std::string name): reactor(r) {
     LOG("Allocated interface " << this->name << ". Configure and use it");
 
     this->fd = &reactor.take_fd(fd);
-    this->fd->on_read_ready = []() {
-        LOG("can read");
+    this->fd->on_read_ready = [this]() {
+        on_read();
     };
 
     this->fd->on_write_ready = []() {
         LOG("can write");
     };
+}
+
+void Tun::on_read() {
+    char buffer[MTU];
+    while(true) {
+        int size = fd->read(buffer, sizeof(buffer));
+        if(size == 0) break;
+        Crafter::Packet packet;
+        const int offset = 4;
+        packet.PacketFromIP((unsigned char*)(buffer + offset), size - offset);
+        on_recv(packet);
+    }
 }

@@ -22,6 +22,13 @@ public:
     Future() {
         data = std::shared_ptr<_FutureData<T> >(new _FutureData<T>);
         data->immediate = false;
+
+        auto data_ptr = &(*data); // avoid cyclic reference
+        data->callback = [data_ptr](T value) {
+            //throw std::runtime_error("future was successful before callback was added");
+            data_ptr->immediate = true;
+            data_ptr->value = value;
+        };
     }
 
     Future(T value) {
@@ -30,7 +37,7 @@ public:
         data->value = value;
     }
 
-    void on_success(std::function<void(T)> fun) {
+    void on_success(std::function<void(T)> fun) const {
         if(data->immediate)
             fun(data->value);
         else
@@ -38,7 +45,7 @@ public:
     }
 
     template <typename R>
-    Future<R> then(std::function<Future<R>(T)> fun) {
+    Future<R> then(std::function<Future<R>(T)> fun) const {
         Future<R> f;
         on_success([f, fun](T val) {
                 Future<R> f1 = f;
@@ -49,7 +56,7 @@ public:
     }
 
     template <typename R>
-    Future<R> then(std::function<R(T)> fun) {
+    Future<R> then(std::function<R(T)> fun) const {
         Future<R> f;
         on_success([=](T val) {
                 R ret = fun(val);
@@ -58,12 +65,19 @@ public:
         return f;
     }
 
-    void result(const T& ret) {
+    // result being const is counter-intuitive, but
+    // Future is just a wrapper for _FutureData
+    void result(const T& ret) const {
         assert(!data->immediate);
+        data->immediate = true;
         data->callback(ret);
     }
 
-    std::function<void(T)> result_fn() {
+    bool has_result() const {
+        return data->immediate;
+    }
+
+    std::function<void(T)> result_fn() const {
         auto data1 = data;
         return [data1](T ret) {
             Future self(data1);
@@ -71,7 +85,7 @@ public:
         };
     }
 
-    T wait(Reactor& reactor) {
+    T wait(Reactor& reactor) const {
         bool ready = false;
         T value;
         on_success([&](T val) {

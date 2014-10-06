@@ -12,5 +12,5 @@ int main() {
         });
     reactor.run();
     LOG("finished");
-    Popen(reactor, "ls").arg(".").check_call().wait(reactor);
+    Popen(reactor, "sh").args({"-c", "sleep 1; ls"}).check_call().wait(reactor);
 }

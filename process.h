@@ -19,7 +19,7 @@ public:
 
 struct CalledProcessError: public std::runtime_error {
     CalledProcessError(int exit_code) :
-        runtime_error("Process exited with exit code " + exit_code),
+    runtime_error("Process exited with error exit code " + std::to_string(exit_code)),
         exit_code(exit_code) {};
 
     int exit_code;
@@ -29,12 +29,13 @@ class Popen {
     friend class Process;
     Reactor& reactor;
     std::vector<std::string> arguments;
-    std::string executable;
     int target_fds[3];
 
     std::array<FD*, 3> init_pipe_fds();
 public:
+    Popen(Reactor& reactor);
     Popen(Reactor& reactor, std::string executable);
+    Popen(Reactor& reactor, std::vector<std::string> arguments);
 
     std::shared_ptr<Process> exec();
     void call(std::function<void(int)> callback);

@@ -9,11 +9,18 @@
 #include <sys/wait.h>
 #include <assert.h>
 
-Popen::Popen(Reactor& reactor, std::string executable) : reactor(reactor), executable(executable) {
+Popen::Popen(Reactor& reactor): reactor(reactor) {
     target_fds[0] = 0;
     target_fds[1] = 1;
     target_fds[2] = 2;
-    arguments.push_back(executable);
+}
+
+Popen::Popen(Reactor& reactor, std::string executable): Popen(reactor) {
+    arg(executable);
+}
+
+Popen::Popen(Reactor& reactor, std::vector<std::string> args): Popen(reactor) {
+    this->args(args);
 }
 
 Popen& Popen::arg(std::string s) {

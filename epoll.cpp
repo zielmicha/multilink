@@ -41,7 +41,7 @@ EPoll::~EPoll() {
 void EPoll::add(int fd) {
     struct epoll_event event;
     event.data.fd = fd;
-    event.events = EPOLLIN | EPOLLET;
+    event.events = EPOLLIN | EPOLLOUT | EPOLLET;
     int res = epoll_ctl(efd, EPOLL_CTL_ADD, fd, &event);
     if (res == -1) errno_to_exception();
 }
