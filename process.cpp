@@ -72,16 +72,21 @@ int Process::start_process(const Popen& options) {
     int pid = fork();
     if(pid == 0) {
         // Child
-        sigset_t sigset;
-        sigemptyset(&sigset);
-        sigprocmask(SIG_SETMASK, &sigset, NULL);
+        try {
+            sigset_t sigset;
+            sigemptyset(&sigset);
+            sigprocmask(SIG_SETMASK, &sigset, NULL);
 
-        for(int i=0; i<3; i++)
-            dup2(options.target_fds[i], i);
+            for(int i=0; i<3; i++)
+                dup2(options.target_fds[i], i);
 
-        execvp(argv[0], (char**)(&(*argv.begin())));
-        perror("execvp");
-        _exit(1);
+            execvp(argv[0], (char**)(&(*argv.begin())));
+            perror("execvp");
+            _exit(1);
+        } catch(...) {
+            fprintf(::stderr, "exception in child");
+            _exit(1);
+        }
     }
     return pid;
 }

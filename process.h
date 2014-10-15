@@ -55,8 +55,8 @@ class Process {
     static std::unordered_map<int, std::shared_ptr<Process> > processes;
 
     std::vector<std::function<void(int)> > on_finish;
-    bool finished;
-    int exit_code;
+    bool finished = false;
+    int exit_code = -1;
 
     friend class Popen;
     Process(Popen options);
