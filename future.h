@@ -95,6 +95,9 @@ public:
         while(!ready) reactor.step();
         return value;
     }
+
+    void ignore() const {
+    }
 };
 
 template <typename T>
