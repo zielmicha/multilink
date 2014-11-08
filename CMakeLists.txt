@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(Link)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -O3 -Wall -Ilibreactor")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -O3 -Wall -I${CMAKE_SOURCE_DIR}/libreactor -I${CMAKE_SOURCE_DIR}/multilink")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lcrafter")
 
 set(COMMON_SRC
@@ -12,9 +12,18 @@ set(COMMON_SRC
   libreactor/signals.cpp
   libreactor/process.cpp
   libreactor/tcp.cpp)
-add_executable(ReactorTest ${COMMON_SRC} reactor_test.cpp)
-add_executable(ProcessTest ${COMMON_SRC} process_test.cpp)
-add_executable(TCPTest ${COMMON_SRC} tcp_test.cpp)
 
-add_executable(TunTest ${COMMON_SRC} craftertun.cpp craftertest.cpp)
-target_link_libraries(TunTest crafter)
+add_library(reactor STATIC ${COMMON_SRC})
+
+add_executable(ReactorTest tests/reactor_test.cpp)
+target_link_libraries(ReactorTest reactor)
+
+add_executable(ProcessTest tests/process_test.cpp)
+target_link_libraries(ProcessTest reactor)
+
+add_executable(TCPTest tests/tcp_test.cpp)
+target_link_libraries(TCPTest reactor)
+
+add_executable(TunTest multilink/craftertun.cpp
+  tests/craftertest.cpp)
+target_link_libraries(TunTest crafter reactor)
