@@ -32,13 +32,19 @@ size_t FD::read(char* target, size_t length) {
     }
 }
 
+void FD::close() {
+    ::close(fd);
+    // commit suicide
+    reactor.fds.erase(fd);
+}
+
 void nop() {}
 
-FD::FD(int fd): fd(fd), on_read_ready(nop), on_write_ready(nop), on_error(nop) {}
+FD::FD(Reactor& r, int fd): reactor(r), fd(fd), on_read_ready(nop), on_write_ready(nop), on_error(nop) {}
 
 FD& Reactor::take_fd(int fd) {
     setnonblocking(fd);
-    fds.insert(decltype(fds)::value_type(fd, FD(fd)));
+    fds.insert(decltype(fds)::value_type(fd, FD(*this, fd)));
     epoll.add(fd);
     return fds.find(fd)->second;
 }
@@ -52,8 +58,8 @@ void Reactor::step() {
     for(EPollResult r: result) {
         auto iter = fds.find(r.fd);
         if(iter == fds.end()) {
+            // TODO: may epoll return event for already closed FD?
             LOG("epoll returned unknown fd: " << r.fd);
-            assert(0);
         }
         FD& fd = iter->second;
         if(r.read_ready)
