@@ -3,11 +3,21 @@
 
 struct unit {};
 
+enum class FutureState {
+    WAITING,
+    IMMEDIATE_EXCEPTION,
+    IMMEDIATE_VALUE
+};
+
+int printf(const char* format, ...);
+
 template <typename T>
 struct _FutureData {
-    bool immediate;
+    FutureState state;
     T value;
-    std::function<void(T)> callback;
+    std::unique_ptr<std::exception> exception;
+    std::function<void(T)> value_callback;
+    std::function<void(std::unique_ptr<std::exception>)> exception_callback;
 };
 
 void _future_nop();
@@ -21,36 +31,60 @@ public:
 
     Future() {
         data = std::shared_ptr<_FutureData<T> >(new _FutureData<T>);
-        data->immediate = false;
+        data->state = FutureState::WAITING;
 
         auto data_ptr = &(*data); // avoid cyclic reference
-        data->callback = [data_ptr](T value) {
-            //throw std::runtime_error("future was successful before callback was added");
-            data_ptr->immediate = true;
+        data->value_callback = [data_ptr](T value) {
+            data_ptr->state = FutureState::IMMEDIATE_VALUE;
             data_ptr->value = value;
+        };
+        data->exception_callback = [data_ptr](std::unique_ptr<std::exception> ex) {
+            data_ptr->state = FutureState::IMMEDIATE_EXCEPTION;
+            data_ptr->exception = std::move(ex);
         };
     }
 
     Future(T value) {
         data = std::shared_ptr<_FutureData<T> >(new _FutureData<T>);
-        data->immediate = true;
+        data->state = FutureState::IMMEDIATE_VALUE;
         data->value = value;
     }
 
-    void on_success(std::function<void(T)> fun) const {
-        if(data->immediate)
-            fun(data->value);
-        else
-            data->callback = fun;
+    void on_success_or_failure(
+        const std::function<void(T)>& fun_value,
+        const std::function<void(std::unique_ptr<std::exception>)>& fun_exc) const {
+        switch(data->state) {
+        case FutureState::IMMEDIATE_VALUE:
+            fun_value(data->value);
+            break;
+        case FutureState::IMMEDIATE_EXCEPTION:
+            fun_exc(std::move(data->exception));
+            break;
+        case FutureState::WAITING:
+            data->value_callback = fun_value;
+            data->exception_callback = fun_exc;
+            break;
+        }
+    }
+
+    void on_success(const std::function<void(T)>& fun_value) const {
+        on_success_or_failure(
+            fun_value,
+            [](std::unique_ptr<std::exception> ex) {
+                throw *ex;
+            });
     }
 
     template <typename R>
     Future<R> then(std::function<Future<R>(T)> fun) const {
         Future<R> f;
-        on_success([f, fun](T val) {
-                Future<R> f1 = f;
+        on_success_or_failure(
+            [f, fun](T val) {
                 Future<R> ret = fun(val);
-                ret.on_success(f1.result_fn());
+                ret.on_success(f.result_fn());
+            },
+            [f, fun](std::unique_ptr<std::exception> ex) {
+                f.result_failure(std::move(ex));
             });
         return f;
     }
@@ -58,9 +92,13 @@ public:
     template <typename R>
     Future<R> then(std::function<R(T)> fun) const {
         Future<R> f;
-        on_success([=](T val) {
+        on_success_or_failure(
+            [=](T val) {
                 R ret = fun(val);
                 f.result(ret);
+            },
+            [=](std::unique_ptr<std::exception> ex) {
+                f.result_failure(ex);
             });
         return f;
     }
@@ -68,13 +106,19 @@ public:
     // result being const is counter-intuitive, but
     // Future is just a wrapper for _FutureData
     void result(const T& ret) const {
-        assert(!data->immediate);
-        data->immediate = true;
-        data->callback(ret);
+        assert(data->state == FutureState::WAITING);
+        data->state = FutureState::IMMEDIATE_VALUE;
+        data->value_callback(ret);
+    }
+
+    void result_failure(std::unique_ptr<std::exception> ex) const {
+        assert(data->state == FutureState::WAITING);
+        data->state = FutureState::IMMEDIATE_EXCEPTION;
+        data->exception_callback(std::move(ex));
     }
 
     bool has_result() const {
-        return data->immediate;
+        return data->state != FutureState::WAITING;
     }
 
     std::function<void(T)> result_fn() const {

@@ -31,12 +31,14 @@ namespace TCP {
                 int result;
                 socklen_t result_len = sizeof(result);
                 if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &result, &result_len) < 0) {
-                    errno_to_exception();
+                    future.result_failure(errno_get_exception());
+                    return;
                 }
 
                 if (result != 0) {
                     errno = result;
-                    errno_to_exception();
+                    future.result_failure(errno_get_exception());
+                    return;
                 }
 
                 if(!future.has_result()) {

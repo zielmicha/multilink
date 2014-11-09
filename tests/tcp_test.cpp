@@ -13,11 +13,15 @@ void test_read(FD* fd) {
 
 int main() {
     Reactor reactor;
-    TCP::connect(reactor, "127.0.0.1", 8000).on_success([](FD* fd) {
+    TCP::connect(reactor, "127.0.0.1", 8000).on_success_or_failure(
+        [](FD* fd) {
             LOG("connected");
             fd->on_read_ready = [fd]() {
                 test_read(fd);
             };
+        },
+        [](std::unique_ptr<std::exception> ex) {
+            LOG("connection failed: " << ex->what());
         });
 
     TCP::listen(reactor, "127.0.0.1", 8002, [](FD* fd) {
