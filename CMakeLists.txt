@@ -27,3 +27,9 @@ target_link_libraries(TCPTest reactor)
 add_executable(TunTest multilink/craftertun.cpp
   tests/craftertest.cpp)
 target_link_libraries(TunTest crafter reactor)
+
+add_executable(MultiLinkTest
+  tests/multilink_test.cpp
+  multilink/multilink.cpp
+  multilink/multilink_link.cpp)
+target_link_libraries(MultiLinkTest reactor)
