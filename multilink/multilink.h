@@ -2,7 +2,9 @@
 #define MULTILINK_H
 #include <cstdint>
 #include <string>
+#include <iostream>
 #include "reactor.h"
+#include "multilink_stats.h"
 
 namespace Multilink {
     struct ChannelInfo {
@@ -21,9 +23,17 @@ namespace Multilink {
         friend class Multilink;
         Link();
         Stream* stream;
+        std::string name;
 
     public:
         Link(const Link& l) = delete;
+
+        void display(std::ostream& stream) const;
+
+        friend std::ostream& operator<<(std::ostream& stream, const Link& link) {
+            link.display(stream);
+            return stream;
+        }
     };
 
     class Multilink {
@@ -33,7 +43,7 @@ namespace Multilink {
         Multilink();
         Multilink(const Multilink& link) = delete;
 
-        Link& add_link(Stream* stream, std::string doc = "");
+        Link& add_link(Stream* stream, std::string name = "default");
 
         std::function<void()> on_send_ready;
         std::function<void()> on_recv_ready;

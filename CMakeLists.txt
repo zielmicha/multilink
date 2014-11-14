@@ -31,5 +31,6 @@ target_link_libraries(TunTest crafter reactor)
 add_executable(MultiLinkTest
   tests/multilink_test.cpp
   multilink/multilink.cpp
-  multilink/multilink_link.cpp)
+  multilink/multilink_link.cpp
+  multilink/multilink_stats.cpp)
 target_link_libraries(MultiLinkTest reactor)
