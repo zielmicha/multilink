@@ -2,6 +2,9 @@
 #include <cmath>
 
 namespace Multilink {
+    Stats::Stats(int count): count(count) {
+    }
+
     void Stats::remove() {
         int val = values.front();
         values.pop_front();

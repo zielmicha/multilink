@@ -25,6 +25,9 @@ namespace Multilink {
         Stream* stream;
         std::string name;
 
+        Stats rtt;
+        BandwidthEstimator bandwidth;
+
     public:
         Link(const Link& l) = delete;
 
@@ -39,6 +42,8 @@ namespace Multilink {
     class Multilink {
     private:
         friend class Link;
+
+        std::vector<Link> links;
     public:
         Multilink();
         Multilink(const Multilink& link) = delete;
