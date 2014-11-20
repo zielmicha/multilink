@@ -38,12 +38,12 @@ EPoll::~EPoll() {
     close(efd);
 }
 
-void EPoll::add(int fd) {
+bool EPoll::add(int fd) {
     struct epoll_event event;
     event.data.fd = fd;
     event.events = EPOLLIN | EPOLLOUT | EPOLLET;
     int res = epoll_ctl(efd, EPOLL_CTL_ADD, fd, &event);
-    if (res == -1) errno_to_exception();
+    return res != -1;
 }
 
 const EPollIterable& EPoll::wait() {

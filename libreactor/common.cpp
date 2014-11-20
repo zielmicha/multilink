@@ -7,5 +7,5 @@ std::unique_ptr<std::exception> errno_get_exception() {
 }
 
 void errno_to_exception() {
-    throw *errno_get_exception();
+    throw std::system_error(errno, std::system_category());
 }
