@@ -34,3 +34,9 @@ add_executable(MultiLinkTest
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
 target_link_libraries(MultiLinkTest reactor)
+
+add_executable(LinkTest
+  tests/link_test.cpp
+  multilink/multilink_link.cpp
+  multilink/multilink_stats.cpp)
+target_link_libraries(MultiLinkTest reactor)
