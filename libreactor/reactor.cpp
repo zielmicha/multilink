@@ -8,8 +8,8 @@
 #define LOGGER_NAME "reactor"
 #include "logging.h"
 
-size_t FD::write(const char* data, size_t length) {
-    int ret = ::write(fd, data, length);
+size_t FD::write(const Buffer data) {
+    int ret = ::write(fd, data.data, data.size);
     if(ret < 0) {
         if(errno == EAGAIN)
             return 0;
@@ -20,8 +20,8 @@ size_t FD::write(const char* data, size_t length) {
     }
 }
 
-size_t FD::read(char* target, size_t length) {
-    int ret = ::read(fd, target, length);
+size_t FD::read(Buffer data) {
+    int ret = ::read(fd, data.data, data.size);
     if(ret < 0) {
         if(errno == EAGAIN)
             return 0;

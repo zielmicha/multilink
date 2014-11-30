@@ -12,7 +12,8 @@ set(COMMON_SRC
   libreactor/signals.cpp
   libreactor/process.cpp
   libreactor/tcp.cpp
-  libreactor/misc.cpp)
+  libreactor/misc.cpp
+  libreactor/buffer.cpp)
 
 add_library(reactor STATIC ${COMMON_SRC})
 

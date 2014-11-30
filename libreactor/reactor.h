@@ -4,6 +4,7 @@
 #include <functional>
 #include <unordered_map>
 #include "epoll.h"
+#include "buffer.h"
 
 class Reactor;
 
@@ -13,8 +14,8 @@ class Reactor;
 
 class Stream {
 public:
-    virtual size_t read(char* dest, size_t size) = 0;
-    virtual size_t write(const char* data, size_t size) = 0;
+    virtual size_t read(Buffer data) = 0;
+    virtual size_t write(const Buffer data) = 0;
     virtual void close() = 0;
 
     virtual void set_on_read_ready(std::function<void()> f) = 0;
@@ -33,8 +34,8 @@ public:
     FD(const FD& r) = delete;
     FD(FD&& r) = default;
 
-    size_t read(char* dest, size_t size);
-    size_t write(const char* data, size_t size);
+    size_t read(Buffer data);
+    size_t write(const Buffer data);
     void close();
 
     std::function<void()> on_read_ready;

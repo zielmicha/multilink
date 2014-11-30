@@ -9,8 +9,8 @@ int main() {
     stdin.on_read_ready = [&]() {
         std::cout << "on_read_ready" << std::endl;
         while(true) {
-            char buff[10];
-            auto size = stdin.read(buff, sizeof(buff));
+            StackBuffer<10> buff;
+            auto size = stdin.read(buff);
             std::cout << "read bytes=" << size << std::endl;
             if(size == 0) break;
         }
