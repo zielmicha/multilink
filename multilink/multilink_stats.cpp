@@ -40,4 +40,9 @@ namespace Multilink {
             remove();
         add(val);
     }
+
+    BandwidthEstimator::BandwidthEstimator(int64_t sampling_time):
+        sampling_time(sampling_time) {
+
+    }
 }

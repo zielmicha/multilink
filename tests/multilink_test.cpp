@@ -1,4 +1,5 @@
 #include "multilink.h"
+#include "misc.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -7,13 +8,7 @@ int main() {
     Multilink::Multilink left;
     Multilink::Multilink right;
 
-    int rawfds[2];
-    socketpair(PF_UNIX, SOCK_STREAM, 0, rawfds);
-
-    std::vector<FD*> fds = {
-        &reactor.take_fd(rawfds[0]),
-        &reactor.take_fd(rawfds[1])
-    };
+    std::vector<FD*> fds = fd_pair(reactor);
 
     left.add_link(fds[0], "left");
     right.add_link(fds[1], "right");

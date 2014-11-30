@@ -11,7 +11,8 @@ set(COMMON_SRC
   libreactor/logging.cpp
   libreactor/signals.cpp
   libreactor/process.cpp
-  libreactor/tcp.cpp)
+  libreactor/tcp.cpp
+  libreactor/misc.cpp)
 
 add_library(reactor STATIC ${COMMON_SRC})
 
@@ -39,4 +40,4 @@ add_executable(LinkTest
   tests/link_test.cpp
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
-target_link_libraries(MultiLinkTest reactor)
+target_link_libraries(LinkTest reactor)
