@@ -31,7 +31,7 @@ Tun::Tun(Reactor& r, std::string name): reactor(r) {
         errno_to_exception();
 
     this->name = ifr.ifr_name;
-    LOG("Allocated interface " << this->name << ". Configure and use it");
+    LOG("Created tun interface " << this->name << ".");
 
     this->fd = &reactor.take_fd(fd);
     this->fd->on_read_ready = [this]() {
