@@ -53,8 +53,12 @@ namespace Multilink {
         std::function<void()> on_send_ready;
         std::function<void()> on_recv_ready;
 
+        /** Queue packet to be sent. Always succeeds */
         void send(ChannelInfo channel, const char* buff, size_t length);
-        size_t recv(ChannelInfo& channel, const char* buff, size_t length);
+        /** Receive packet, if there is one waiting.
+         * Returns packet size or -1 if no packet is ready to be received.
+         */
+        ssize_t recv(ChannelInfo& channel, const char* buff, size_t length);
     };
 }
 #endif
