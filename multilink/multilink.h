@@ -31,11 +31,20 @@ namespace Multilink {
         uint64_t last_recv_time;
         uint64_t last_recv_ack_id;
 
+        AllocBuffer recv_buffer;
+        Buffer recv_buffer_current;
+
         AllocBuffer send_buffer;
         Buffer send_buffer_current;
 
         void transport_write_ready();
         void transport_read_ready();
+
+        void try_parse_recv_packet();
+        void parse_recv_packet(Buffer data);
+
+        void format_send_packet(Buffer data);
+
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();

@@ -13,10 +13,27 @@ public:
     char* data;
 
     Buffer slice(size_t start, size_t size);
+    Buffer slice(size_t start);
     void copy_to(Buffer target) const;
+    void delete_start(size_t end);
+
+    std::string human_repr() const;
+
+    static const Buffer from_cstr(const char* s);
 
     operator std::string() {
         return std::string(data, size);
+    }
+
+    friend std::ostream& operator<<(std::ostream& stream, const Buffer& buff) {
+        stream << buff.human_repr();
+        return stream;
+    }
+
+    template <class T>
+    T& convert(size_t pos) {
+        // TODO: probably violates strict aliasing
+        return *((T*)(data + pos));
     }
 };
 
@@ -30,8 +47,8 @@ public:
 };
 
 class AllocBuffer {
-    char* data;
     size_t size;
+    char* data;
 public:
     AllocBuffer(size_t size);
     ~AllocBuffer();
