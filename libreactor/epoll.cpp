@@ -40,6 +40,7 @@ EPoll::~EPoll() {
 
 bool EPoll::add(int fd) {
     struct epoll_event event;
+    event.data.u64 = 0; // supress valgrind error
     event.data.fd = fd;
     event.events = EPOLLIN | EPOLLOUT | EPOLLET;
     int res = epoll_ctl(efd, EPOLL_CTL_ADD, fd, &event);

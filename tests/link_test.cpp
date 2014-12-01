@@ -5,10 +5,12 @@ using namespace Multilink;
 
 int main() {
     Reactor reactor;
-
     std::vector<FD*> fds = fd_pair(reactor);
-    Link a {fds[0]};
-    Link b {fds[1]};
 
-    StackBuffer<4096> buff;
+    {
+        Link a {reactor, fds[0]};
+        Link b {reactor, fds[1]};
+
+        StackBuffer<4096> buff;
+    }
 }

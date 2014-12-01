@@ -24,20 +24,32 @@ namespace Multilink {
 
     class Link {
     private:
+        Reactor& reactor;
         Stream* stream;
+
+        uint64_t last_recv_id;
+        uint64_t last_recv_time;
+        uint64_t last_recv_ack_id;
+
+        AllocBuffer send_buffer;
+        Buffer send_buffer_current;
+
+        void transport_write_ready();
+        void transport_read_ready();
     public:
-        Link(Stream* stream);
+        Link(Reactor& reactor, Stream* stream);
+        ~Link();
+        Link(const Link& l) = delete;
+
         std::string name;
 
         Stats rtt;
         BandwidthEstimator bandwidth;
 
-        Link(const Link& l) = delete;
-
         void display(std::ostream& stream) const;
 
         optional<Buffer> recv(Buffer data);
-        void send(const Buffer data);
+        bool send(const Buffer data);
 
         std::function<void()> on_recv_ready;
         std::function<void()> on_send_ready;
