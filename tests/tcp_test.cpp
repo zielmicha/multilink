@@ -3,11 +3,11 @@
 
 void test_read(FD* fd) {
     while(true) {
-        char buff[10];
-        auto size = fd->read(buff, sizeof(buff));
-        std::cout << url_encode(buff) << std::endl;
-        std::cout << "read bytes=" << size << std::endl;
-        if(size == 0) break;
+        StackBuffer<10> buff;
+        Buffer data = fd->read(buff);
+        std::cout << url_encode(data) << std::endl;
+        std::cout << "read bytes=" << data.size << std::endl;
+        if(data.size == 0) break;
     }
 }
 

@@ -44,13 +44,13 @@ Tun::Tun(Reactor& r, std::string name): reactor(r) {
 }
 
 void Tun::on_read() {
-    char buffer[MTU];
+    StackBuffer<MTU> buffer;
     while(true) {
-        int size = fd->read(buffer, sizeof(buffer));
-        if(size == 0) break;
+        Buffer data = fd->read(buffer);
+        if(data.size == 0) break;
         Crafter::Packet packet;
         const int offset = 4;
-        packet.PacketFromIP((unsigned char*)(buffer + offset), size - offset);
+        packet.PacketFromIP((unsigned char*)(data.data + offset), data.size - offset);
         on_recv(packet);
     }
 }

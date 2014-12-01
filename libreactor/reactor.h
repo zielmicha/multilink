@@ -14,7 +14,7 @@ class Reactor;
 
 class Stream {
 public:
-    virtual size_t read(Buffer data) = 0;
+    virtual Buffer read(Buffer data) = 0;
     virtual size_t write(const Buffer data) = 0;
     virtual void close() = 0;
 
@@ -34,7 +34,7 @@ public:
     FD(const FD& r) = delete;
     FD(FD&& r) = default;
 
-    size_t read(Buffer data);
+    Buffer read(Buffer data);
     size_t write(const Buffer data);
     void close();
 

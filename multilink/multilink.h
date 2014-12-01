@@ -3,10 +3,14 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
+#include <boost/optional/optional.hpp>
 #include "reactor.h"
 #include "multilink_stats.h"
 
 namespace Multilink {
+    template <class T>
+    using optional = boost::optional<T>;
+
     struct ChannelInfo {
         uint8_t type;
         uint64_t id;
@@ -31,6 +35,12 @@ namespace Multilink {
         Link(const Link& l) = delete;
 
         void display(std::ostream& stream) const;
+
+        optional<Buffer> recv(Buffer data);
+        void send(const Buffer data);
+
+        std::function<void()> on_recv_ready;
+        std::function<void()> on_send_ready;
 
         friend std::ostream& operator<<(std::ostream& stream, const Link& link) {
             link.display(stream);

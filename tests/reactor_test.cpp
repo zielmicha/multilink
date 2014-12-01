@@ -10,9 +10,9 @@ int main() {
         std::cout << "on_read_ready" << std::endl;
         while(true) {
             StackBuffer<10> buff;
-            auto size = stdin.read(buff);
-            std::cout << "read bytes=" << size << std::endl;
-            if(size == 0) break;
+            Buffer data = stdin.read(buff);
+            std::cout << "read bytes=" << data.size << std::endl;
+            if(data.size == 0) break;
         }
     };
 

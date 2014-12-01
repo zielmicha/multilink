@@ -26,7 +26,7 @@ void setup_crash_handlers() {
   signal(SIGABRT, handler);
 }
 
-std::string url_encode(const std::string &value) {
+std::string url_encode(std::string value) {
     std::ostringstream escaped;
     escaped.fill('0');
     escaped << std::hex;

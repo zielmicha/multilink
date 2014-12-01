@@ -21,6 +21,6 @@
 #endif
 
 void setup_crash_handlers();
-std::string url_encode(const std::string &value);
+std::string url_encode(std::string value);
 
 #endif

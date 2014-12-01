@@ -20,15 +20,15 @@ size_t FD::write(const Buffer data) {
     }
 }
 
-size_t FD::read(Buffer data) {
+Buffer FD::read(Buffer data) {
     int ret = ::read(fd, data.data, data.size);
     if(ret < 0) {
         if(errno == EAGAIN)
-            return 0;
+            return data.slice(0, 0);
         else
             errno_to_exception();
     } else {
-        return (size_t)ret;
+        return data.slice(0, (size_t)ret);
     }
 }
 

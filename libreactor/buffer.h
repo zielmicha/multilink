@@ -1,6 +1,8 @@
 #ifndef BUFFER_H_
 #define BUFFER_H_
 #include <cstdint>
+#include <string>
+
 using size_t = std::size_t;
 
 class Buffer {
@@ -11,6 +13,10 @@ public:
     char* data;
 
     Buffer slice(size_t start, size_t size);
+
+    operator std::string() {
+        return std::string(data, size);
+    }
 };
 
 template <int SIZE>
