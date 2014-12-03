@@ -37,6 +37,7 @@ public:
     Buffer read(Buffer data);
     size_t write(const Buffer data);
     void close();
+    int fileno();
 
     std::function<void()> on_read_ready;
     std::function<void()> on_write_ready;

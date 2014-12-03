@@ -32,6 +32,10 @@ Buffer FD::read(Buffer data) {
     }
 }
 
+int FD::fileno() {
+    return fd;
+}
+
 void FD::close() {
     ::close(fd);
     // commit suicide

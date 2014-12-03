@@ -17,7 +17,8 @@ set(COMMON_SRC
   libreactor/process.cpp
   libreactor/tcp.cpp
   libreactor/misc.cpp
-  libreactor/buffer.cpp)
+  libreactor/buffer.cpp
+  libreactor/timer.cpp)
 
 add_library(reactor STATIC ${COMMON_SRC})
 
@@ -29,6 +30,9 @@ target_link_libraries(ProcessTest reactor)
 
 add_executable(TCPTest tests/tcp_test.cpp)
 target_link_libraries(TCPTest reactor)
+
+add_executable(TimerTest tests/timer_test.cpp)
+target_link_libraries(TimerTest reactor)
 
 add_executable(TunTest multilink/craftertun.cpp
   tests/craftertest.cpp)
