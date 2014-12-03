@@ -31,8 +31,12 @@ namespace Multilink {
         uint64_t last_recv_time;
         uint64_t last_recv_ack_id;
 
-        AllocBuffer recv_buffer;
-        Buffer recv_buffer_current;
+        AllocBuffer recv_buffer_alloc;
+        Buffer recv_buffer;
+        size_t recv_buffer_pos = 0;
+
+        AllocBuffer waiting_recv_packet_buffer;
+        optional<Buffer> waiting_recv_packet;
 
         AllocBuffer send_buffer;
         Buffer send_buffer_current;
@@ -40,10 +44,10 @@ namespace Multilink {
         void transport_write_ready();
         void transport_read_ready();
 
-        void try_parse_recv_packet();
+        bool try_parse_recv_packet();
         void parse_recv_packet(Buffer data);
 
-        void format_send_packet(Buffer data);
+        void format_send_packet(uint8_t type, Buffer data);
 
     public:
         Link(Reactor& reactor, Stream* stream);
@@ -57,7 +61,7 @@ namespace Multilink {
 
         void display(std::ostream& stream) const;
 
-        optional<Buffer> recv(Buffer data);
+        optional<Buffer> recv(); // return value is valid only until next cycle
         bool send(const Buffer data);
 
         std::function<void()> on_recv_ready;

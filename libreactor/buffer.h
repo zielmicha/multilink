@@ -2,6 +2,7 @@
 #define BUFFER_H_
 #include <cstdint>
 #include <string>
+#include <sstream>
 
 using size_t = std::size_t;
 
@@ -26,8 +27,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const Buffer& buff) {
-        stream << buff.human_repr();
-        return stream;
+        return stream << "Buffer(" << buff.size << ", \"" << buff.human_repr() << "\")";
     }
 
     template <class T>

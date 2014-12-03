@@ -1,8 +1,12 @@
 cmake_minimum_required (VERSION 2.6)
 project(Link)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -O3 -Wall -I${CMAKE_SOURCE_DIR}/libreactor -I${CMAKE_SOURCE_DIR}/multilink")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lcrafter")
+
+include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink)
 
 set(COMMON_SRC
   libreactor/reactor.cpp

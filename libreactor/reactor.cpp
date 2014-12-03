@@ -52,7 +52,16 @@ FD& Reactor::take_fd(int fd) {
 
 Reactor::Reactor() {}
 
+void Reactor::schedule(std::function<void()> func) {
+    scheduled_functions.push_back(func);
+}
+
 void Reactor::step() {
+    decltype(scheduled_functions) scheduled_functions_copy;
+    std::swap(scheduled_functions, scheduled_functions_copy);
+    for(auto& func: scheduled_functions_copy)
+        func();
+
     auto& result = epoll.wait();
     Signals::call_handlers();
 

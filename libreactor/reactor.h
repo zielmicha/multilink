@@ -59,12 +59,15 @@ private:
 
     EPoll epoll;
     std::unordered_map<int, FD> fds;
+    std::vector<std::function<void()> > scheduled_functions;
     bool want_exit = false;
 public:
     Reactor(const Reactor& r) = delete;
     Reactor();
 
     FD& take_fd(int fd);
+
+    void schedule(std::function<void()> func);
 
     void step();
     void exit();
