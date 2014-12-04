@@ -6,6 +6,7 @@
 const int64_t SAMPLING_TIME = 2000;
 const size_t MTU = 4096;
 const size_t HEADER_SIZE = 3;
+const uint64_t PING_INTERVAL = 100 * 1000;
 
 namespace Multilink {
     Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
@@ -20,11 +21,16 @@ namespace Multilink {
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this));
     }
 
+    void Link::display(std::ostream& out) const {
+        out << "Link(" << name << ")";
+    }
+
     void Link::transport_write_ready() {
         //LOG("transport_write_ready: pre");
         while(true) {
             if(send_buffer_current.size == 0) {
                 reactor.schedule([this]() {
+                    this->send_aux();
                     this->on_send_ready();
                 });
                 return;
@@ -40,14 +46,58 @@ namespace Multilink {
         }
     }
 
-    bool Link::send(Buffer data) {
+    bool Link::send(uint64_t seq, Buffer data) {
+        if(!send_aux()) {
+            assert(seq > last_seq_sent);
+            last_seq_sent = seq;
+            format_send_packet(0, data);
+            transport_write_ready();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool Link::send_aux() {
         if(send_buffer_current.size != 0)
-            return false; // previous packet still not sent
+            return true; // previous packet still not sent
 
-        format_send_packet(0, data);
-        transport_write_ready();
+        if(last_pong_request_time != 0) {
+            send_pong();
+            transport_write_ready();
+            return true;
+        } else if(should_ping()) {
+            send_ping();
+            transport_write_ready();
+            return true;
+        } else {
+            return false;
+        }
+    }
 
-        return true;
+    bool Link::should_ping() {
+        return (Timer::get_time() - last_ping_sent) > PING_INTERVAL;
+    }
+
+    void Link::send_ping() {
+        LOG(*this << " send_ping");
+
+        StackBuffer<16> data;
+        Buffer(data).convert<uint64_t>(0) = Timer::get_time();
+        Buffer(data).convert<uint64_t>(8) = last_seq_sent;
+        format_send_packet(1, data);
+
+        last_ping_sent = Timer::get_time();
+    }
+
+    void Link::send_pong() {
+        StackBuffer<16> data;
+        Buffer(data).convert<uint64_t>(0) = last_pong_request_time;
+        Buffer(data).convert<uint64_t>(8) = last_pong_request_seq;
+        format_send_packet(2, data);
+
+        last_pong_request_time = 0;
+        last_pong_request_seq = 0;
     }
 
     void Link::format_send_packet(uint8_t type, Buffer data) {
@@ -101,6 +151,14 @@ namespace Multilink {
             waiting_recv_packet = waiting_recv_packet_buffer.as_buffer().slice(0, data.size - HEADER_SIZE);
             data.slice(HEADER_SIZE).copy_to(*waiting_recv_packet);
             on_recv_ready();
+        } else if(type == 1) { // ping
+            last_pong_request_time = data.convert<uint64_t>(3);
+            last_pong_request_seq = data.convert<uint64_t>(11);
+            reactor.schedule(std::bind(&Link::send_aux, this));
+        } else if(type == 2) { // pong
+            LOG("pong " << data);
+        } else {
+            LOG("unknown packet received: " << data);
         }
     }
 

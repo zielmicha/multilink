@@ -5,6 +5,7 @@
 #include <iostream>
 #include <boost/optional/optional.hpp>
 #include "reactor.h"
+#include "timer.h"
 #include "multilink_stats.h"
 
 namespace Multilink {
@@ -27,10 +28,6 @@ namespace Multilink {
         Reactor& reactor;
         Stream* stream;
 
-        uint64_t last_recv_id;
-        uint64_t last_recv_time;
-        uint64_t last_recv_ack_id;
-
         AllocBuffer recv_buffer_alloc;
         Buffer recv_buffer;
         size_t recv_buffer_pos = 0;
@@ -41,11 +38,21 @@ namespace Multilink {
         AllocBuffer send_buffer;
         Buffer send_buffer_current;
 
+        uint64_t last_ping_sent = 0;
+        uint64_t last_pong_request_time = 0;
+        uint64_t last_pong_request_seq = 0;
+        uint64_t last_seq_sent = 0;
+
         void transport_write_ready();
         void transport_read_ready();
 
         bool try_parse_recv_packet();
         void parse_recv_packet(Buffer data);
+
+        bool should_ping();
+        void send_ping();
+        void send_pong();
+        bool send_aux();
 
         void format_send_packet(uint8_t type, Buffer data);
 
@@ -62,7 +69,7 @@ namespace Multilink {
         void display(std::ostream& stream) const;
 
         optional<Buffer> recv(); // return value is valid only until next cycle
-        bool send(const Buffer data);
+        bool send(uint64_t seq, const Buffer data);
 
         std::function<void()> on_recv_ready;
         std::function<void()> on_send_ready;

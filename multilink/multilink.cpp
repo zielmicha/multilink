@@ -5,10 +5,6 @@ namespace Multilink {
 
     }
 
-    void Link::display(std::ostream& stream) const {
-        stream << "Link " << name << " rtt=" << std::endl;
-    }
-
     void Multilink::send(ChannelInfo channel,
                          const char* buff, size_t size) {
 

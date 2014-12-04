@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <sstream>
+#include <cassert>
 
 using size_t = std::size_t;
 
@@ -32,6 +33,7 @@ public:
 
     template <class T>
     T& convert(size_t pos) {
+        assert(pos + sizeof(T) <= size);
         // TODO: probably violates strict aliasing
         return *((T*)(data + pos));
     }

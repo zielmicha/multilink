@@ -11,44 +11,38 @@ int main() {
 
     {
         Link a {reactor, fds[0]};
+        a.name = "a";
         Link b {reactor, fds[1]};
+        b.name = "b";
 
         int counter = 10;
 
         a.on_send_ready = [&]() {
-            cout << "a.on_send_ready counter=" << counter << endl;
-
             if(counter != 0) {
                 char data[20] = "\0foobar";
                 Buffer pak {data, 7};
                 //pak.convert<uint8_t>(0) = counter;
                 pak.data[0] = counter;
-                LOG("write " << pak);
 
-                if(a.send(pak)) {
+                if(a.send(1000000 - counter, pak)) {
                     counter --;
                 }
             }
         };
 
         a.on_recv_ready = []() {
-            cout << "a.on_recv_ready" << endl;
         };
 
         b.on_send_ready = []() {
-            //cout << "b.on_send_ready" << endl;
         };
 
         b.on_recv_ready = [&]() {
             while(true) {
-                cout << "b.on_recv_ready" << endl;
                 optional<Buffer> ret = b.recv();
                 if(!ret) return;
                 cout << "read: " << *ret << endl;
             }
         };
-
-        cout << "a.send" << endl;
 
         reactor.run();
     }
