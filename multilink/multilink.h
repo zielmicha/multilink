@@ -27,6 +27,7 @@ namespace Multilink {
     private:
         Reactor& reactor;
         Stream* stream;
+        Timer timer;
 
         AllocBuffer recv_buffer_alloc;
         Buffer recv_buffer;
@@ -42,7 +43,9 @@ namespace Multilink {
         uint64_t last_pong_request_time = 0;
         uint64_t last_pong_request_seq = 0;
         uint64_t last_seq_sent = 0;
+        uint64_t last_pong_recv_seq = 0;
 
+        void timer_callback();
         void transport_write_ready();
         void transport_read_ready();
 
@@ -70,6 +73,7 @@ namespace Multilink {
 
         optional<Buffer> recv(); // return value is valid only until next cycle
         bool send(uint64_t seq, const Buffer data);
+        uint64_t get_last_ack_seq() { return last_pong_recv_seq; };
 
         std::function<void()> on_recv_ready;
         std::function<void()> on_send_ready;
