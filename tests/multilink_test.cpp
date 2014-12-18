@@ -5,8 +5,8 @@
 
 int main() {
     Reactor reactor;
-    Multilink::Multilink left;
-    Multilink::Multilink right;
+    Multilink::Multilink left(reactor);
+    Multilink::Multilink right(reactor);
 
     std::vector<FD*> fds = fd_pair(reactor);
 
@@ -15,5 +15,8 @@ int main() {
 
     Multilink::ChannelInfo info;
     info.type = Multilink::ChannelInfo::TYPE_COMMON;
-    left.send(info, "foobar", 7);
+
+    left.send(info, Buffer::from_cstr("foobar"));
+
+    reactor.run();
 }

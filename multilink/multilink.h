@@ -86,9 +86,10 @@ namespace Multilink {
 
     class Multilink {
     private:
-        std::vector<Link> links;
+        std::vector<std::unique_ptr<Link> > links;
+        Reactor& reactor;
     public:
-        Multilink();
+        Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;
 
         Link& add_link(Stream* stream, std::string name = "default");
@@ -97,11 +98,11 @@ namespace Multilink {
         std::function<void()> on_recv_ready;
 
         /** Queue packet to be sent. Always succeeds */
-        void send(ChannelInfo channel, const char* buff, size_t length);
+        void send(ChannelInfo channel, const Buffer data);
         /** Receive packet, if there is one waiting.
-         * Returns packet size or -1 if no packet is ready to be received.
+         * Returns pointer to data or none if no packet is waiting to be received.
          */
-        ssize_t recv(ChannelInfo& channel, const char* buff, size_t length);
+        optional<Buffer> recv(ChannelInfo& channel, Buffer data);
     };
 }
 #endif

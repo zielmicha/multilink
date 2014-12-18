@@ -1,21 +1,23 @@
 #include "multilink.h"
 
 namespace Multilink {
-    Multilink::Multilink() {
+    Multilink::Multilink(Reactor& reactor): reactor(reactor) {
 
     }
 
-    void Multilink::send(ChannelInfo channel,
-                         const char* buff, size_t size) {
+    void Multilink::send(ChannelInfo channel, const Buffer data) {
 
     }
 
-    ssize_t Multilink::recv(ChannelInfo& channel,
-                 const char* buff, size_t size) {
-        return -1;
+    optional<Buffer> Multilink::recv(ChannelInfo& channel,
+                 Buffer data) {
+        return optional<Buffer>();
     }
 
     Link& Multilink::add_link(Stream* stream, std::string name) {
-        return *((Link*)NULL);
+        links.emplace_back(new Link(reactor, stream));
+        Link& link = *links.back();
+        link.name = name;
+        return link;
     }
 }
