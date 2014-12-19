@@ -23,6 +23,22 @@ public:
     virtual void set_on_error(std::function<void()> f) = 0;
 };
 
+// There must be a better way...
+#define STREAM_FIELDS                                   \
+    std::function<void()> on_read_ready;                \
+    std::function<void()> on_write_ready;               \
+    std::function<void()> on_error;                     \
+                                                        \
+    void set_on_read_ready(std::function<void()> f) {   \
+        on_read_ready = f;                              \
+    }                                                   \
+    void set_on_write_ready(std::function<void()> f) {  \
+        on_write_ready = f;                             \
+    }                                                   \
+    void set_on_error(std::function<void()> f) {        \
+        on_error = f;                                   \
+    }                                                   \
+
 class FD: public Stream {
 private:
     friend class Reactor;
@@ -39,19 +55,7 @@ public:
     void close();
     int fileno();
 
-    std::function<void()> on_read_ready;
-    std::function<void()> on_write_ready;
-    std::function<void()> on_error;
-
-    void set_on_read_ready(std::function<void()> f) {
-        on_read_ready = f;
-    }
-    void set_on_write_ready(std::function<void()> f) {
-        on_write_ready = f;
-    }
-    void set_on_error(std::function<void()> f) {
-        on_error = f;
-    }
+    STREAM_FIELDS
 };
 
 class Reactor {

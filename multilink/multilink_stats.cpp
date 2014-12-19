@@ -45,4 +45,8 @@ namespace Multilink {
         sampling_time(sampling_time) {
 
     }
+
+    void BandwidthEstimator::data_transmitted(int64_t time, int64_t bytes) {
+
+    }
 }

@@ -74,6 +74,7 @@ void Reactor::step() {
         if(iter == fds.end()) {
             // TODO: may epoll return event for already closed FD?
             LOG("epoll returned unknown fd: " << r.fd);
+            continue;
         }
         FD& fd = iter->second;
         if(r.read_ready)

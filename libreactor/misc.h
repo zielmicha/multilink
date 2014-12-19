@@ -4,5 +4,6 @@
 #include "reactor.h"
 
 std::vector<FD*> fd_pair(Reactor& reactor);
+inline void nothing() {};
 
 #endif
