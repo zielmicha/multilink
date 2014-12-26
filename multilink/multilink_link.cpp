@@ -3,7 +3,6 @@
 #include "logging.h"
 #include <arpa/inet.h>
 
-const int64_t SAMPLING_TIME = 2000;
 const size_t MTU = 4096;
 const size_t HEADER_SIZE = 3;
 const uint64_t PING_INTERVAL = 1000 * 1000;
@@ -16,8 +15,7 @@ namespace Multilink {
                                                   recv_buffer(recv_buffer_alloc.as_buffer()),
                                                   waiting_recv_packet_buffer(MTU),
                                                   send_buffer(MTU),
-                                                  send_buffer_current(NULL, 0),
-                                                  bandwidth(SAMPLING_TIME) {
+                                                  send_buffer_current(NULL, 0) {
         stream->set_on_read_ready(std::bind(&Link::transport_read_ready, this));
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this));
         reactor.schedule(std::bind(&Link::timer_callback, this));
@@ -33,6 +31,7 @@ namespace Multilink {
     }
 
     void Link::transport_write_ready() {
+        bandwidth.write_ready(Timer::get_time());
         //LOG("transport_write_ready: pre");
         while(true) {
             if(send_buffer_current.size == 0) {
@@ -46,6 +45,7 @@ namespace Multilink {
             //LOG("transport_write_ready");
             while(send_buffer_current.size != 0) {
                 size_t bytes = stream->write(send_buffer_current);
+                bandwidth.data_written(Timer::get_time(), bytes);
                 //LOG("just sent " << send_buffer_current.slice(0, bytes));
                 if(bytes == 0) return;
                 send_buffer_current = send_buffer_current.slice(bytes);
@@ -165,9 +165,11 @@ namespace Multilink {
         } else if(type == 2) { // pong
             uint64_t time = data.convert<uint64_t>(HEADER_SIZE);
             uint64_t delta = Timer::get_time() - time;
+
             rtt.add_and_remove_back((int)delta);
 
-            LOG("pong delta=" << delta << " rtt=" << rtt.mean() << " dev=" << rtt.stddev());
+            LOG("pong delta=" << delta << " rtt=" << rtt.mean() << " dev=" << rtt.stddev()
+                << " bandwidth=" << (int)bandwidth.bandwidth_mbps() << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
         } else {
             LOG("unknown packet received: " << data);

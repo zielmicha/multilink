@@ -1,4 +1,5 @@
 #include "multilink_stats.h"
+#include "logging.h"
 #include <cmath>
 
 namespace Multilink {
@@ -6,13 +7,13 @@ namespace Multilink {
     }
 
     void Stats::remove() {
-        int val = values.front();
+        long long val = values.front();
         values.pop_front();
         sum_of_squares -= ((long long)val) * val;
         sum -= val;
     }
 
-    void Stats::add(int val) {
+    void Stats::add(long long val) {
         values.push_back(val);
         sum_of_squares += ((long long)val) * val;
         sum += val;
@@ -35,18 +36,35 @@ namespace Multilink {
         return sqrt(sum_of_squares / (double)values.size() - ((double)m)*m);
     }
 
-    void Stats::add_and_remove_back(int val) {
+    void Stats::add_and_remove_back(long long val) {
         if((int)values.size() >= count)
             remove();
         add(val);
     }
 
-    BandwidthEstimator::BandwidthEstimator(int64_t sampling_time):
-        sampling_time(sampling_time) {
+    BandwidthEstimator::BandwidthEstimator():
+        stats(100) {
 
     }
 
-    void BandwidthEstimator::data_transmitted(int64_t time, int64_t bytes) {
+    void BandwidthEstimator::data_written(uint64_t time, uint64_t bytes) {
+        if(transmit_size == 0) {
+            transmit_start = time;
+        }
+        transmit_size += bytes;
+    }
 
+    void BandwidthEstimator::write_ready(uint64_t time) {
+        uint64_t delta = time - transmit_start;
+        if(delta == 0) delta = 1;
+        uint64_t bps = (transmit_size * MBPS_TO_BPS / delta);
+        //LOG("measure " << transmit_size << " " << delta);
+        stats.add_and_remove_back(bps);
+        transmit_start = 0;
+        transmit_size = 0;
+    }
+
+    double BandwidthEstimator::bandwidth_mbps() {
+        return stats.mean() / MBPS_TO_BPS;
     }
 }
