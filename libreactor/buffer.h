@@ -54,6 +54,7 @@ class AllocBuffer {
 public:
     AllocBuffer(size_t size);
     ~AllocBuffer();
+    AllocBuffer(const AllocBuffer&) = delete;
 
     Buffer as_buffer();
 };

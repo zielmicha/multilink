@@ -3,7 +3,7 @@ project(Link)
 
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lcrafter")
 
 include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink)
@@ -56,3 +56,8 @@ add_executable(ThrottledTest
   tests/throttled_test.cpp
   libreactor/throttled.cpp)
 target_link_libraries(ThrottledTest reactor)
+
+add_executable(DelayedTest
+  tests/delayed_test.cpp
+  libreactor/throttled.cpp)
+target_link_libraries(DelayedTest reactor)
