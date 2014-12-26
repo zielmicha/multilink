@@ -16,17 +16,21 @@ int main() {
         b.name = "b";
 
         int counter = 1;
+        const int expcount = 1000000;
 
         a.on_send_ready = [&]() {
-            if(counter != 100) {
+            if(counter < expcount) {
                 char data[2000];
                 memset(data, 0, sizeof(data));
                 Buffer pak {data, sizeof(data)};
 
-                LOG("send " << counter);
                 if(a.send(counter, pak)) {
                     counter ++;
                 }
+            }
+            if(counter == expcount) {
+                LOG("finished");
+                counter ++;
             }
         };
 
@@ -40,7 +44,7 @@ int main() {
             while(true) {
                 optional<Buffer> ret = b.recv();
                 if(!ret) return;
-                LOG("read packet");
+                //LOG("read packet");
             }
         };
 

@@ -141,13 +141,15 @@ namespace Multilink {
             if(expected_length > recv_buffer.size) {
                 LOG("expected_length too big");
             }
+            assert(expected_length != 0);
+
             if(recv_buffer_pos >= expected_length) {
                 // packet is ready
                 parse_recv_packet(recv_buffer.slice(0, expected_length));
                 recv_buffer.slice(0, recv_buffer_pos).delete_start(expected_length);
                 recv_buffer_pos -= expected_length;
+                return true;
             }
-            return true;
         }
         return false;
     }
@@ -169,7 +171,7 @@ namespace Multilink {
             rtt.add_and_remove_back((int)delta);
 
             LOG("pong delta=" << delta << " rtt=" << rtt.mean() << " dev=" << rtt.stddev()
-                << " bandwidth=" << (int)bandwidth.bandwidth_mbps() << "Mbps");
+                << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
         } else {
             LOG("unknown packet received: " << data);

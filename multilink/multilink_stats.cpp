@@ -54,7 +54,11 @@ namespace Multilink {
         transmit_size += bytes;
     }
 
+    const uint64_t BANDWIDTH_MEASURE_MIN_SIZE = 128;
+
     void BandwidthEstimator::write_ready(uint64_t time) {
+        if(transmit_size < BANDWIDTH_MEASURE_MIN_SIZE)
+            return;
         uint64_t delta = time - transmit_start;
         if(delta == 0) delta = 1;
         uint64_t bps = (transmit_size * MBPS_TO_BPS / delta);
