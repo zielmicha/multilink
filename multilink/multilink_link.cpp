@@ -26,15 +26,17 @@ namespace Multilink {
     }
 
     void Link::timer_callback() {
+        // Make sure pings are sent even when there is no other traffic.
         send_aux();
         timer.once(PING_INTERVAL, std::bind(&Link::timer_callback, this));
     }
 
     void Link::transport_write_ready() {
         bandwidth.write_ready(Timer::get_time());
-        //LOG("transport_write_ready: pre");
+
         while(true) {
             if(send_buffer_current.size == 0) {
+                // Send buffer is empty - schedule new packet.
                 reactor.schedule([this]() {
                     this->send_aux();
                     this->on_send_ready();
@@ -42,11 +44,10 @@ namespace Multilink {
                 return;
             }
 
-            //LOG("transport_write_ready");
+            // Write as much as possible from send buffer.
             while(send_buffer_current.size != 0) {
                 size_t bytes = stream->write(send_buffer_current);
                 bandwidth.data_written(Timer::get_time(), bytes);
-                //LOG("just sent " << send_buffer_current.slice(0, bytes));
                 if(bytes == 0) return;
                 send_buffer_current = send_buffer_current.slice(bytes);
             }
@@ -66,6 +67,8 @@ namespace Multilink {
     }
 
     bool Link::send_aux() {
+        // Possibly send some auxiliary packet (ping/pong).
+        // Returns false if after this call send buffer is empty.
         if(send_buffer_current.size != 0)
             return true; // previous packet still not sent
 
@@ -120,7 +123,7 @@ namespace Multilink {
 
     void Link::transport_read_ready() {
         while(true) {
-            if(waiting_recv_packet) // out buffer is occupied
+            if(waiting_recv_packet) // out buffer is occupied, wait until recv is called
                 break;
 
             Buffer new_buffer = stream->read(recv_buffer.slice(recv_buffer_pos));
@@ -129,8 +132,7 @@ namespace Multilink {
 
             recv_buffer_pos += new_buffer.size;
 
-            //LOG("just read " << new_buffer);
-
+            // Parse zero or more packets.
             while(try_parse_recv_packet()) ;
         }
     }
@@ -156,7 +158,7 @@ namespace Multilink {
 
     void Link::parse_recv_packet(Buffer data) {
         uint8_t type = data.convert<uint8_t>(2);
-        if(type == 0) {
+        if(type == 0) { // data packet
             waiting_recv_packet = waiting_recv_packet_buffer.as_buffer().slice(0, data.size - HEADER_SIZE);
             data.slice(HEADER_SIZE).copy_to(*waiting_recv_packet);
             on_recv_ready();
@@ -182,8 +184,8 @@ namespace Multilink {
         optional<Buffer> packet;
         std::swap(packet, waiting_recv_packet);
         // recv buffer is now empty - attempt reading from socket
-        // Schedule transport_read_ready, so it won't overwrite waiting_recv_packet.
         // (After congestion on recv/on_recv_ready side there may be waiting data in stream)
+        // (schedule the call, so it won't overwrite waiting_recv_packet)
         reactor.schedule(std::bind(&Link::transport_read_ready, this));
         return packet;
     }
