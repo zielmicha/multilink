@@ -55,7 +55,8 @@ target_link_libraries(LinkTest reactor)
 add_executable(LinkBwTest
   tests/link_bw_test.cpp
   multilink/multilink_link.cpp
-  multilink/multilink_stats.cpp)
+  multilink/multilink_stats.cpp
+  libreactor/throttled.cpp)
 target_link_libraries(LinkBwTest reactor)
 
 add_executable(ThrottledTest

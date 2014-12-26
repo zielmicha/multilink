@@ -62,7 +62,7 @@ namespace Multilink {
         uint64_t delta = time - transmit_start;
         if(delta == 0) delta = 1;
         uint64_t bps = (transmit_size * MBPS_TO_BPS / delta);
-        //LOG("measure " << transmit_size << " " << delta);
+        //LOG("measure " << transmit_size << " " << delta << " " << (stats.mean() / MBPS_TO_BPS));
         stats.add_and_remove_back(bps);
         transmit_start = 0;
         transmit_size = 0;

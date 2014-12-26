@@ -17,7 +17,7 @@ namespace Multilink {
                                                   send_buffer(MTU),
                                                   send_buffer_current(NULL, 0) {
         stream->set_on_read_ready(std::bind(&Link::transport_read_ready, this));
-        stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this));
+        stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this, true));
         reactor.schedule(std::bind(&Link::timer_callback, this));
     }
 
@@ -31,8 +31,8 @@ namespace Multilink {
         timer.once(PING_INTERVAL, std::bind(&Link::timer_callback, this));
     }
 
-    void Link::transport_write_ready() {
-        bandwidth.write_ready(Timer::get_time());
+    void Link::transport_write_ready(bool real) {
+        uint64_t bytes_written = 0;
 
         while(true) {
             if(send_buffer_current.size == 0) {
@@ -41,17 +41,24 @@ namespace Multilink {
                     this->send_aux();
                     this->on_send_ready();
                 });
-                return;
+                goto finish;
             }
 
             // Write as much as possible from send buffer.
             while(send_buffer_current.size != 0) {
                 size_t bytes = stream->write(send_buffer_current);
-                bandwidth.data_written(Timer::get_time(), bytes);
-                if(bytes == 0) return;
+                bytes_written += bytes;
+                if(bytes == 0) goto finish;
+
                 send_buffer_current = send_buffer_current.slice(bytes);
             }
         }
+
+    finish:
+        if((send_buffer_current.size == 0 && real) || bytes_written != 0)
+            bandwidth.write_ready(Timer::get_time());
+
+        bandwidth.data_written(Timer::get_time(), bytes_written);
     }
 
     bool Link::send(uint64_t seq, Buffer data) {
@@ -172,7 +179,7 @@ namespace Multilink {
 
             rtt.add_and_remove_back((int)delta);
 
-            LOG("pong delta=" << delta << " rtt=" << rtt.mean() << " dev=" << rtt.stddev()
+            LOG("pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
                 << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
         } else {

@@ -46,7 +46,7 @@ namespace Multilink {
         uint64_t last_pong_recv_seq = 0;
 
         void timer_callback();
-        void transport_write_ready();
+        void transport_write_ready(bool real=false);
         void transport_read_ready();
 
         bool try_parse_recv_packet();

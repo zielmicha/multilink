@@ -2,6 +2,8 @@
 #include "misc.h"
 #include "buffer.h"
 #include "logging.h"
+#include "throttled.h"
+
 using namespace Multilink;
 using namespace std;
 
@@ -10,13 +12,14 @@ int main() {
     vector<FD*> fds = fd_pair(reactor);
 
     {
-        Link a {reactor, fds[0]};
+        ThrottledStream fd0(reactor, fds[0], 2);
+        Link a {reactor, &fd0};
         a.name = "a";
         Link b {reactor, fds[1]};
         b.name = "b";
 
         int counter = 1;
-        const int expcount = 1000000;
+        const int expcount = 500;
 
         a.on_send_ready = [&]() {
             if(counter < expcount) {
@@ -44,7 +47,7 @@ int main() {
             while(true) {
                 optional<Buffer> ret = b.recv();
                 if(!ret) return;
-                //LOG("read packet");
+                //LOG("read packet size=" << ret->size);
             }
         };
 
