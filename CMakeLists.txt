@@ -23,6 +23,12 @@ set(COMMON_SRC
 
 add_library(reactor STATIC ${COMMON_SRC})
 
+add_library(multilink STATIC
+  multilink/multilink.cpp
+  multilink/packet_queue.cpp
+  multilink/multilink_link.cpp
+  multilink/multilink_stats.cpp)
+
 add_executable(ReactorTest tests/reactor_test.cpp)
 target_link_libraries(ReactorTest reactor)
 
@@ -38,13 +44,6 @@ target_link_libraries(TimerTest reactor)
 add_executable(TunTest multilink/craftertun.cpp
   tests/craftertest.cpp)
 target_link_libraries(TunTest crafter reactor)
-
-add_executable(MultiLinkTest
-  tests/multilink_test.cpp
-  multilink/multilink.cpp
-  multilink/multilink_link.cpp
-  multilink/multilink_stats.cpp)
-target_link_libraries(MultiLinkTest reactor)
 
 add_executable(LinkTest
   tests/link_test.cpp
@@ -68,3 +67,12 @@ add_executable(DelayedTest
   tests/delayed_test.cpp
   libreactor/throttled.cpp)
 target_link_libraries(DelayedTest reactor)
+
+add_executable(PacketQueueTest
+  tests/packet_queue_test.cpp
+  multilink/packet_queue.cpp)
+target_link_libraries(PacketQueueTest reactor)
+
+add_executable(MultiLinkTest
+  tests/multilink_test.cpp)
+target_link_libraries(MultiLinkTest multilink reactor)

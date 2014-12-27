@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <memory.h>
 
 using size_t = std::size_t;
 
@@ -14,9 +15,22 @@ public:
     size_t size;
     char* data;
 
-    Buffer slice(size_t start, size_t size);
-    Buffer slice(size_t start);
-    void copy_to(Buffer target) const;
+    Buffer slice(size_t start, size_t size) {
+        assert(size >= 0 && start >= 0);
+        assert(start + size <= this->size);
+
+        return Buffer(data + start, size);
+    }
+
+    Buffer slice(size_t start) {
+        return slice(start, size - start);
+    }
+
+    void copy_to(Buffer target) const {
+        assert(size <= target.size);
+        memcpy(target.data, data, size);
+    }
+
     void delete_start(size_t end);
 
     std::string human_repr() const;
@@ -56,7 +70,9 @@ public:
     ~AllocBuffer();
     AllocBuffer(const AllocBuffer&) = delete;
 
-    Buffer as_buffer();
+    Buffer as_buffer() {
+        return Buffer(data, size);
+    }
 };
 
 class BufferList {

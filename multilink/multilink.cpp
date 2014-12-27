@@ -1,7 +1,10 @@
 #include "multilink.h"
 
+const int QUEUE_SIZE = 100000;
+
 namespace Multilink {
-    Multilink::Multilink(Reactor& reactor): reactor(reactor) {
+    Multilink::Multilink(Reactor& reactor): reactor(reactor),
+                                            queue(QUEUE_SIZE) {
 
     }
 
