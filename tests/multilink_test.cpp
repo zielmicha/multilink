@@ -13,10 +13,7 @@ int main() {
     left.add_link(fds[0], "left");
     right.add_link(fds[1], "right");
 
-    Multilink::ChannelInfo info;
-    info.type = Multilink::ChannelInfo::TYPE_COMMON;
-
-    left.send(info, Buffer::from_cstr("foobar"));
+    left.send(Buffer::from_cstr("foobar"));
 
     reactor.run();
 }

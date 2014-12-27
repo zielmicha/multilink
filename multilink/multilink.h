@@ -5,6 +5,10 @@
 
 namespace Multilink {
     class Multilink {
+        // Reliability:
+        // - all packets eventually arrive
+        // - packets may arrive reordered
+        // - packets may arrive duplicated
     private:
         Reactor& reactor;
 
@@ -12,6 +16,10 @@ namespace Multilink {
         uint64_t buffsize = 10000;
 
         PacketQueue queue;
+
+        void link_recv_ready(Link* link);
+        void link_send_ready(Link* link);
+
     public:
         Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;
@@ -21,13 +29,13 @@ namespace Multilink {
         std::function<void()> on_send_ready;
         std::function<void()> on_recv_ready;
 
-        /** Queue packet to be sent. Always succeeds */
-        void send(ChannelInfo channel, const Buffer data);
+        /** Queue packet to be sent. Returns true if suceeded. */
+        bool send(const Buffer data);
 
         /** Receive packet, if there is one waiting.
-         * Returns pointer to data or none if no packet is waiting to be received.
+         * Returns temp pointer or none if no packet is waiting to be received.
          */
-        optional<Buffer> recv(ChannelInfo& channel, Buffer data);
+        optional<Buffer> recv();
     };
 }
 #endif
