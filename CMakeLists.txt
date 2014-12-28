@@ -81,3 +81,11 @@ target_link_libraries(MultiLinkTest multilink reactor)
 add_executable(ReorderStreamTest
   tests/reorder_stream_test.cpp)
 target_link_libraries(ReorderStreamTest multilink reactor)
+
+add_executable(SequenceServer
+  tests/sequence_server.cpp)
+target_link_libraries(SequenceServer multilink reactor)
+
+add_executable(SequenceClient
+  tests/sequence_client.cpp)
+target_link_libraries(SequenceClient multilink reactor)

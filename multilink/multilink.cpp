@@ -36,6 +36,9 @@ namespace Multilink {
         link->on_recv_ready = std::bind(&Multilink::link_recv_ready, this, link);
         link->on_send_ready = std::bind(&Multilink::link_send_ready, this, link);
         link->name = name;
+
+        reactor.schedule(std::bind(&Multilink::link_send_ready, this, link));
+
         return *link;
     }
 
@@ -44,13 +47,17 @@ namespace Multilink {
     }
 
     void Multilink::link_send_ready(Link* link) {
-        if(!queue.empty()) {
-            if(link->send(++last_seq, queue.front())) {
-                queue.pop_front();
+        while(true) {
+            if(queue.empty()) {
                 on_send_ready();
             }
-        } else {
-            // mark link as ready
+            if(queue.empty()) break;
+
+            if(link->send(++last_seq, queue.front())) {
+                queue.pop_front();
+            } else {
+                break;
+            }
         }
     }
 
