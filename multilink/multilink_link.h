@@ -3,16 +3,12 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
-#include <boost/optional/optional.hpp>
 #include "reactor.h"
 #include "timer.h"
 #include "multilink_stats.h"
+#include "packet_stream.h"
 
 namespace Multilink {
-
-    template <class T>
-    using optional = boost::optional<T>;
-
     struct ChannelInfo {
         uint8_t type;
         uint64_t id;

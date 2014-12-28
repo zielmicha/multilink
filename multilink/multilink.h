@@ -4,7 +4,7 @@
 #include "packet_queue.h"
 
 namespace Multilink {
-    class Multilink {
+    class Multilink: public PacketStream {
         // Reliability:
         // - all packets eventually arrive
         // - packets may arrive reordered
@@ -13,21 +13,19 @@ namespace Multilink {
         Reactor& reactor;
 
         std::vector<std::unique_ptr<Link> > links;
-        uint64_t buffsize = 10000;
 
         PacketQueue queue;
+        uint64_t last_seq = 0; // TODO
 
         void link_recv_ready(Link* link);
         void link_send_ready(Link* link);
+        void some_link_send_ready();
 
     public:
         Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;
 
         Link& add_link(Stream* stream, std::string name = "default");
-
-        std::function<void()> on_send_ready;
-        std::function<void()> on_recv_ready;
 
         /** Queue packet to be sent. Returns true if suceeded. */
         bool send(const Buffer data);
@@ -36,6 +34,10 @@ namespace Multilink {
          * Returns temp pointer or none if no packet is waiting to be received.
          */
         optional<Buffer> recv();
+
+        void close() {}
+
+        PACKET_STREAM_FIELDS
     };
 }
 #endif

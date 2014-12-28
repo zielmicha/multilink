@@ -18,6 +18,7 @@ public:
     void pop_front();
 
     bool push_back(const Buffer data);
+    bool empty() { return queue.empty();  }
 };
 
 #endif

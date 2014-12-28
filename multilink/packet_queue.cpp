@@ -18,7 +18,7 @@ void PacketQueue::pop_front() {
 }
 
 Buffer PacketQueue::front() {
-    auto b = queue.back();
+    auto b = queue.front();
     return buffer.as_buffer().slice(b.first, b.second - b.first);
 }
 

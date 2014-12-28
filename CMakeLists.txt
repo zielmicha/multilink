@@ -26,6 +26,7 @@ add_library(reactor STATIC ${COMMON_SRC})
 add_library(multilink STATIC
   multilink/multilink.cpp
   multilink/packet_queue.cpp
+  multilink/reorder_stream.cpp
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
 
@@ -76,3 +77,7 @@ target_link_libraries(PacketQueueTest reactor)
 add_executable(MultiLinkTest
   tests/multilink_test.cpp)
 target_link_libraries(MultiLinkTest multilink reactor)
+
+add_executable(ReorderStreamTest
+  tests/reorder_stream_test.cpp)
+target_link_libraries(ReorderStreamTest multilink reactor)

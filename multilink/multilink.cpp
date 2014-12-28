@@ -1,4 +1,6 @@
 #include "multilink.h"
+#define LOGGER_NAME "multilink"
+#include "logging.h"
 
 const int QUEUE_SIZE = 100000;
 
@@ -9,7 +11,12 @@ namespace Multilink {
     }
 
     bool Multilink::send(const Buffer data) {
-        return queue.push_back(data);
+        bool was_empty = queue.empty();
+        bool pushed = queue.push_back(data);
+        if(was_empty) {
+            reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
+        }
+        return pushed;
     }
 
     optional<Buffer> Multilink::recv() {
@@ -37,6 +44,18 @@ namespace Multilink {
     }
 
     void Multilink::link_send_ready(Link* link) {
+        if(!queue.empty()) {
+            if(link->send(++last_seq, queue.front())) {
+                queue.pop_front();
+                on_send_ready();
+            }
+        } else {
+            // mark link as ready
+        }
+    }
 
+    void Multilink::some_link_send_ready() {
+        for(auto& link: links)
+            link_send_ready(&*link);
     }
 }
