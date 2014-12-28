@@ -29,9 +29,11 @@ int main() {
     };
 
     send_packet(1, 'a');
-    send_packet(2, 'b');
     send_packet(3, 'c');
+    send_packet(3, 'c');
+    send_packet(2, 'b');
     send_packet(1, 'a');
+    send_packet(5, 'e');
 
     left_reorder.on_recv_ready = [&]() {
         LOG("recv ready");
@@ -42,6 +44,11 @@ int main() {
         }
     };
     left_reorder.on_send_ready = nothing;
+
+    timer.once(1000 * 1000, [&]() {
+        LOG("send d");
+        send_packet(4, 'd');
+    });
 
     reactor.run();
 

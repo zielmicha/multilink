@@ -43,7 +43,7 @@ void ReorderStream::transport_recv_ready() {
         AllocBuffer final_buff(user_data.size);
         user_data.copy_to(final_buff.as_buffer());
         packets.insert(std::make_pair(seq, std::move(final_buff)));
-        if(seq == next_send_seq) front_received = true;
+        if(seq == next_recv_seq) front_received = true;
     }
     if(front_received)
         on_recv_ready();
