@@ -57,6 +57,7 @@ FD& Reactor::take_fd(int fd) {
 Reactor::Reactor() {}
 
 void Reactor::schedule(std::function<void()> func) {
+    assert(scheduled_functions.size() < 1000);
     scheduled_functions.push_back(func);
 }
 
