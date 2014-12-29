@@ -1,10 +1,11 @@
 cmake_minimum_required (VERSION 2.6)
 project(Link)
 
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field")
-set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lcrafter")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_C_COMPILER "/usr/bin/gcc")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG")
+# for clang: -fcolor-diagnostics -Wno-unused-private-field
+set(CMAKE_EXE_LINKER_FLAGS "-rdynamic")
 
 include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink)
 
@@ -42,9 +43,9 @@ target_link_libraries(TCPTest reactor)
 add_executable(TimerTest tests/timer_test.cpp)
 target_link_libraries(TimerTest reactor)
 
-add_executable(TunTest multilink/craftertun.cpp
-  tests/craftertest.cpp)
-target_link_libraries(TunTest crafter reactor)
+#add_executable(TunTest multilink/craftertun.cpp
+#  tests/craftertest.cpp)
+#target_link_libraries(TunTest crafter reactor)
 
 add_executable(LinkTest
   tests/link_test.cpp
