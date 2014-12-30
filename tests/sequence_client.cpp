@@ -5,7 +5,7 @@
 #include "reorder_stream.h"
 #include "multilink.h"
 
-int main() {
+int main(int argc, char** argv) {
     Reactor reactor;
     Multilink::Multilink mlink {reactor};
 
@@ -26,7 +26,13 @@ int main() {
     };
 
     for(int i=0; i < 3; i++) {
-        FD* conn = TCP::connect(reactor, "127.0.0.1", 6000).wait(reactor);
+        std::string host = "127.0.0.1";
+        int port = 6000;
+        if(argc == 3) {
+            host = argv[1];
+            port = atoi(argv[2]);
+        }
+        FD* conn = TCP::connect(reactor, host, port).wait(reactor);
         mlink.add_link(conn, boost::lexical_cast<std::string>(i));
     }
 

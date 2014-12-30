@@ -72,7 +72,8 @@ FD::FD(Reactor& r, int fd): reactor(r), fd(fd), on_read_ready(nop), on_write_rea
 
 FD& Reactor::take_fd(int fd) {
     setnonblocking(fd);
-    fds.insert(decltype(fds)::value_type(fd, FD(*this, fd)));
+    typedef decltype(fds) fds_type;
+    fds.insert(fds_type::value_type(fd, FD(*this, fd)));
     // FIXME: don't throw exception (return invalid fd or error monad?)
     if(!epoll.add(fd)) errno_to_exception();
     return fds.find(fd)->second;

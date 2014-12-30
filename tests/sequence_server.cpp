@@ -12,7 +12,7 @@ int main() {
 
     int link_counter = 0;
 
-    TCP::listen(reactor, "127.0.0.1", 6000, [&](FD* sock) {
+    TCP::listen(reactor, "0.0.0.0", 6000, [&](FD* sock) {
         LOG("link connected");
         Stream* link = new ThrottledStream(reactor, sock, 2);
         mlink.add_link(link, boost::lexical_cast<std::string>(link_counter ++));

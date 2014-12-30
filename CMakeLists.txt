@@ -4,7 +4,7 @@ project(Link)
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field")
-set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lcrafter")
+set(CMAKE_EXE_LINKER_FLAGS "-rdynamic")
 
 include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink)
 
@@ -87,3 +87,7 @@ target_link_libraries(SequenceServer multilink reactor)
 add_executable(SequenceClient
   tests/sequence_client.cpp)
 target_link_libraries(SequenceClient multilink reactor)
+
+add_executable(MLProxyServer
+  tests/ml_proxy_server.cpp)
+target_link_libraries(MLProxyServer multilink reactor)
