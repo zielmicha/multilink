@@ -41,12 +41,17 @@ namespace Multilink {
         while(true) {
             if(send_buffer_current.size == 0) {
                 // Send buffer is empty - schedule new packet.
-                // TODO: this should be more edge-triggered
-                // (there can be a LOT of writes per epoch)
-                reactor.schedule([this]() {
-                    if(!this->send_aux())
-                        this->on_send_ready();
-                });
+                // edge-triggering
+                if(send_buffer_edge) {
+                    send_buffer_edge = false;
+
+                    reactor.schedule([this]() {
+                        send_buffer_edge = true;
+
+                        if(!this->send_aux())
+                            this->on_send_ready();
+                    });
+                }
                 goto finish;
             }
 
@@ -71,8 +76,7 @@ namespace Multilink {
         if(!send_aux()) {
             assert(seq > last_seq_sent);
             last_seq_sent = seq;
-            format_send_packet(0, data);
-            transport_write_ready();
+            raw_send_packet(0, data);
             return true;
         } else {
             return false;
@@ -87,11 +91,9 @@ namespace Multilink {
 
         if(last_pong_request_time != 0) {
             send_pong();
-            transport_write_ready();
             return true;
         } else if(should_ping()) {
             send_ping();
-            transport_write_ready();
             return true;
         } else {
             return false;
@@ -108,19 +110,25 @@ namespace Multilink {
         StackBuffer<16> data;
         Buffer(data).convert<uint64_t>(0) = Timer::get_time();
         Buffer(data).convert<uint64_t>(8) = last_seq_sent;
-        format_send_packet(1, data);
+        raw_send_packet(1, data);
 
         last_ping_sent = Timer::get_time();
     }
 
     void Link::send_pong() {
+        LOG(*this << " send_pong");
         StackBuffer<16> data;
         Buffer(data).convert<uint64_t>(0) = last_pong_request_time;
         Buffer(data).convert<uint64_t>(8) = last_pong_request_seq;
-        format_send_packet(2, data);
+        raw_send_packet(2, data);
 
         last_pong_request_time = 0;
         last_pong_request_seq = 0;
+    }
+
+    void Link::raw_send_packet(uint8_t type, Buffer data) {
+        format_send_packet(type, data);
+        reactor.schedule(std::bind(&Link::transport_write_ready, this, false));
     }
 
     void Link::format_send_packet(uint8_t type, Buffer data) {
@@ -135,6 +143,7 @@ namespace Multilink {
     }
 
     void Link::transport_read_ready() {
+        //LOG("transport read ready");
         while(true) {
             if(waiting_recv_packet) // out buffer is occupied, wait until recv is called
                 break;
@@ -151,6 +160,7 @@ namespace Multilink {
     }
 
     bool Link::try_parse_recv_packet() {
+        // FIXME: two levels of abstraction
         if(recv_buffer_pos >= sizeof(uint16_t)) {
             uint16_t expected_length = ntohs(recv_buffer.convert<uint16_t>(0));
             if(expected_length > recv_buffer.size) {
@@ -174,7 +184,7 @@ namespace Multilink {
         if(type == 0) { // data packet
             waiting_recv_packet = waiting_recv_packet_buffer.as_buffer().slice(0, data.size - HEADER_SIZE);
             data.slice(HEADER_SIZE).copy_to(*waiting_recv_packet);
-            on_recv_ready();
+            reactor.schedule(on_recv_ready);
         } else if(type == 1) { // ping
             last_pong_request_time = data.convert<uint64_t>(HEADER_SIZE);
             last_pong_request_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
@@ -185,7 +195,8 @@ namespace Multilink {
 
             rtt.add_and_remove_back((int)delta);
 
-            LOG("pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
+            LOG(*this <<
+                " pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
                 << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
         } else {
@@ -201,6 +212,7 @@ namespace Multilink {
             // recv buffer is now empty - attempt reading from socket
             // (After congestion on recv/on_recv_ready side there may be waiting data in stream)
             // (schedule the call, so it won't overwrite waiting_recv_packet)
+            //LOG("reactor.schedule transport_read_ready");
             reactor.schedule(std::bind(&Link::transport_read_ready, this));
         }
 

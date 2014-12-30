@@ -35,6 +35,7 @@ namespace Multilink {
 
         AllocBuffer send_buffer;
         Buffer send_buffer_current;
+        bool send_buffer_edge = true;
 
         uint64_t last_ping_sent = 0;
         uint64_t last_pong_request_time = 0;
@@ -55,7 +56,7 @@ namespace Multilink {
         bool send_aux();
 
         void format_send_packet(uint8_t type, Buffer data);
-
+        void raw_send_packet(uint8_t type, Buffer data);
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();

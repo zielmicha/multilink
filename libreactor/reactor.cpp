@@ -10,6 +10,7 @@
 
 #ifdef ENABLE_EPOCH_LIMIT
 const uint64_t MAX_EPOCH_READ = 40960;
+const uint64_t MAX_EPOCH_WRITE = 40960;
 const uint64_t EPOCH_INF = 1ull << 63;
 #endif
 
