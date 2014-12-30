@@ -5,8 +5,6 @@
 #include "future.h"
 #include <unordered_map>
 #include <vector>
-#include <stdexcept>
-#include <array>
 
 class Process;
 
