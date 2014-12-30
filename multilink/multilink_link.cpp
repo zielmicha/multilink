@@ -190,10 +190,14 @@ namespace Multilink {
     optional<Buffer> Link::recv() {
         optional<Buffer> packet;
         std::swap(packet, waiting_recv_packet);
-        // recv buffer is now empty - attempt reading from socket
-        // (After congestion on recv/on_recv_ready side there may be waiting data in stream)
-        // (schedule the call, so it won't overwrite waiting_recv_packet)
-        reactor.schedule(std::bind(&Link::transport_read_ready, this));
+
+        if(packet) {
+            // recv buffer is now empty - attempt reading from socket
+            // (After congestion on recv/on_recv_ready side there may be waiting data in stream)
+            // (schedule the call, so it won't overwrite waiting_recv_packet)
+            reactor.schedule(std::bind(&Link::transport_read_ready, this));
+        }
+
         return packet;
     }
 

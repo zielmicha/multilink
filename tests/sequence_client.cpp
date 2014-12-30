@@ -19,6 +19,7 @@ int main() {
             auto packet = stream.recv();
             if(!packet) break;
             auto v = packet->convert<int32_t>(0);
+            //LOG("recv " << v);
             assert(v == counter);
             counter ++;
         }

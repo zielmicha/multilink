@@ -46,6 +46,11 @@ private:
 
     int fd;
     FD(Reactor& r, int fd);
+
+#ifdef ENABLE_EPOCH_LIMIT
+    uint64_t last_epoch = 0;
+    uint64_t epoch_read_bytes = 0;
+#endif
 public:
     FD(const FD& r) = delete;
     FD(FD&& r) = default;
@@ -66,6 +71,7 @@ private:
     std::unordered_map<int, FD> fds;
     std::vector<std::function<void()> > scheduled_functions;
     bool want_exit = false;
+    uint64_t epoch = 0;
 public:
     Reactor(const Reactor& r) = delete;
     Reactor();

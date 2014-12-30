@@ -8,6 +8,11 @@
 #define LOGGER_NAME "reactor"
 #include "logging.h"
 
+#ifdef ENABLE_EPOCH_LIMIT
+const uint64_t MAX_EPOCH_READ = 40960;
+const uint64_t EPOCH_INF = 1ull << 63;
+#endif
+
 size_t FD::write(const Buffer data) {
     int ret = ::write(fd, data.data, data.size);
     if(ret < 0) {
@@ -21,7 +26,25 @@ size_t FD::write(const Buffer data) {
 }
 
 Buffer FD::read(Buffer data) {
+    #ifdef ENABLE_EPOCH_LIMIT
+    if(reactor.epoch == last_epoch) {
+        last_epoch = reactor.epoch;
+        epoch_read_bytes = 0;
+    }
+
+    if(epoch_read_bytes > MAX_EPOCH_READ) {
+        if(epoch_read_bytes != EPOCH_INF) {
+            reactor.schedule(on_read_ready);
+            epoch_read_bytes = EPOCH_INF;
+        }
+        return data.slice(0, 0);
+    }
+    #endif
+
     int ret = ::read(fd, data.data, data.size);
+    #ifdef ENABLE_EPOCH_LIMIT
+    epoch_read_bytes += ret;
+    #endif
     if(ret < 0) {
         if(errno == EAGAIN)
             return data.slice(0, 0);
@@ -57,14 +80,19 @@ FD& Reactor::take_fd(int fd) {
 Reactor::Reactor() {}
 
 void Reactor::schedule(std::function<void()> func) {
+    assert(scheduled_functions.size() < 1000);
     scheduled_functions.push_back(func);
 }
 
 void Reactor::step() {
-    decltype(scheduled_functions) scheduled_functions_copy;
-    std::swap(scheduled_functions, scheduled_functions_copy);
-    for(auto& func: scheduled_functions_copy)
-        func();
+    epoch ++;
+
+    while(!scheduled_functions.empty()) {
+        decltype(scheduled_functions) scheduled_functions_copy;
+        std::swap(scheduled_functions, scheduled_functions_copy);
+        for(auto& func: scheduled_functions_copy)
+            func();
+    }
 
     auto& result = epoll.wait();
     Signals::call_handlers();

@@ -19,7 +19,8 @@ set(COMMON_SRC
   libreactor/misc.cpp
   libreactor/buffer.cpp
   libreactor/timer.cpp
-  libreactor/streamutil.cpp)
+  libreactor/streamutil.cpp
+  libreactor/throttled.cpp)
 
 add_library(reactor STATIC ${COMMON_SRC})
 
@@ -55,18 +56,15 @@ target_link_libraries(LinkTest reactor)
 add_executable(LinkBwTest
   tests/link_bw_test.cpp
   multilink/multilink_link.cpp
-  multilink/multilink_stats.cpp
-  libreactor/throttled.cpp)
+  multilink/multilink_stats.cpp)
 target_link_libraries(LinkBwTest reactor)
 
 add_executable(ThrottledTest
-  tests/throttled_test.cpp
-  libreactor/throttled.cpp)
+  tests/throttled_test.cpp)
 target_link_libraries(ThrottledTest reactor)
 
 add_executable(DelayedTest
-  tests/delayed_test.cpp
-  libreactor/throttled.cpp)
+  tests/delayed_test.cpp)
 target_link_libraries(DelayedTest reactor)
 
 add_executable(PacketQueueTest

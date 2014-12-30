@@ -4,6 +4,7 @@
 #include "misc.h"
 #include "reorder_stream.h"
 #include "multilink.h"
+#include "throttled.h"
 
 int main() {
     Reactor reactor;
@@ -13,7 +14,8 @@ int main() {
 
     TCP::listen(reactor, "127.0.0.1", 6000, [&](FD* sock) {
         LOG("link connected");
-        mlink.add_link(sock, boost::lexical_cast<std::string>(link_counter ++));
+        Stream* link = new ThrottledStream(reactor, sock, 5);
+        mlink.add_link(link, boost::lexical_cast<std::string>(link_counter ++));
     }).ignore();
 
     int send_counter = 0;
