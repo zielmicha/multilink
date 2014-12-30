@@ -4,7 +4,7 @@ project(Link)
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field")
-set(CMAKE_EXE_LINKER_FLAGS "-rdynamic")
+set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt")
 
 include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink)
 
