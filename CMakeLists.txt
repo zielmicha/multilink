@@ -27,6 +27,7 @@ add_library(reactor STATIC ${COMMON_SRC})
 add_library(multilink STATIC
   multilink/multilink.cpp
   multilink/packet_queue.cpp
+  multilink/packet_stream_util.cpp
   multilink/reorder_stream.cpp
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
@@ -91,3 +92,7 @@ target_link_libraries(SequenceClient multilink reactor)
 add_executable(MLProxyServer
   tests/ml_proxy_server.cpp)
 target_link_libraries(MLProxyServer multilink reactor)
+
+add_executable(MLProxyClient
+  tests/ml_proxy_client.cpp)
+target_link_libraries(MLProxyClient multilink reactor)
