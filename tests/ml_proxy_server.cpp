@@ -25,9 +25,10 @@ int main() {
     }).ignore();
 
     ReorderStream out {&mlink};
+    FreePacketStream ptarget {reactor, target};
 
-    pipe(target, &out);
-    pipe(&out, target);
+    pipe(reactor, &ptarget, &out);
+    pipe(reactor, &out, &ptarget);
 
     reactor.run();
 }

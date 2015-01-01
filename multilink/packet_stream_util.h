@@ -3,7 +3,43 @@
 #include "packet_stream.h"
 #include "reactor.h"
 
-void pipe(Stream* in, PacketStream* out);
-void pipe(PacketStream* in, Stream* out);
+class FreePacketStream: public PacketStream {
+    Reactor& reactor;
+    Stream* stream;
+
+    AllocBuffer send_buffer;
+    Buffer send_buffer_current;
+    AllocBuffer recv_buffer;
+
+    void write_ready();
+    void read_ready();
+
+public:
+    FreePacketStream(Reactor& reactor, Stream* stream);
+    FreePacketStream(const FreePacketStream&) = delete;
+
+    optional<Buffer> recv();
+    bool send(const Buffer data);
+    void close() { stream->close(); }
+
+    PACKET_STREAM_FIELDS
+};
+
+
+class Piper {
+    Reactor& reactor;
+    PacketStream* in;
+    PacketStream* out;
+
+    void recv_ready();
+    void send_ready();
+
+    AllocBuffer buffer;
+    optional<Buffer> current;
+public:
+    Piper(Reactor& reactor, PacketStream* in, PacketStream* out);
+};
+
+void pipe(Reactor& reactor, PacketStream* in, PacketStream* out);
 
 #endif

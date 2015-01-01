@@ -96,3 +96,11 @@ target_link_libraries(MLProxyServer multilink reactor)
 add_executable(MLProxyClient
   tests/ml_proxy_client.cpp)
 target_link_libraries(MLProxyClient multilink reactor)
+
+add_executable(PipeTest
+  tests/pipe_test.cpp)
+target_link_libraries(PipeTest multilink reactor)
+
+add_executable(FreePacketStreamTest
+  tests/free_packet_stream_test.cpp)
+target_link_libraries(FreePacketStreamTest multilink reactor)

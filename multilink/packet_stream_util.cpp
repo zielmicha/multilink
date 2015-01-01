@@ -1,82 +1,87 @@
 #include "packet_stream_util.h"
+#define LOGGER_NAME "packetstreamutil"
+#include "logging.h"
+
 const int MTU = 4096;
 
-class PipeStreamToPacketStream {
-public:
-    AllocBuffer buff;
-    Buffer data;
-    Stream* in;
-    PacketStream* out;
-
-    PipeStreamToPacketStream(Stream* in, PacketStream* out): buff(MTU),
-                                                             data(NULL, 0),
-                                                             in(in),
-                                                             out(out) {
-        out->set_on_send_ready(std::bind(&PipeStreamToPacketStream::on_send_ready, this));
-        in->set_on_read_ready(std::bind(&PipeStreamToPacketStream::on_read_ready, this));
-    }
-
-    void on_read_ready() {
-        if(data.size == 0) {
-            data = in->read(buff.as_buffer());
-            if(data.size != 0)
-                on_send_ready();
-        }
-    }
-
-    void on_send_ready() {
-        if(data.size != 0) {
-            if(out->send(data))
-                data = data.slice(0, 0);
-        } else {
-            on_read_ready();
-        }
-    }
-};
-
-void pipe(Stream* in, PacketStream* out) {
-    new PipeStreamToPacketStream(in, out);
+FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream): reactor(reactor),
+                                                                      stream(stream),
+                                                                      send_buffer(MTU),
+                                                                      send_buffer_current(NULL, 0),
+                                                                      recv_buffer(MTU) {
+    stream->set_on_write_ready(std::bind(&FreePacketStream::write_ready, this));
+    stream->set_on_read_ready(std::bind(&FreePacketStream::read_ready, this));
 }
 
+optional<Buffer> FreePacketStream::recv() {
+    Buffer data = stream->read(recv_buffer.as_buffer());
+    if(data.size == 0)
+        return optional<Buffer>();
+    else
+        return data;
+}
 
-class PipePacketStreamToStream {
-public:
-    AllocBuffer buff;
-    Buffer data;
-    PacketStream* in;
-    Stream* out;
+void FreePacketStream::read_ready() {
+    on_recv_ready();
+}
 
-    PipePacketStreamToStream(PacketStream* in, Stream* out): buff(MTU),
-                                                             data(NULL, 0),
-                                                             in(in),
-                                                             out(out) {
-        in->set_on_recv_ready(std::bind(&PipePacketStreamToStream::on_recv_ready, this));
-        out->set_on_write_ready(std::bind(&PipePacketStreamToStream::on_write_ready, this));
+bool FreePacketStream::send(const Buffer data) {
+    assert(data.size <= MTU);
+    if(send_buffer_current.size == 0) {
+        send_buffer_current = send_buffer.as_buffer().slice(0, data.size);
+        data.copy_to(send_buffer_current);
+        reactor.schedule(std::bind(&FreePacketStream::write_ready, this));
+        return true;
+    } else {
+        return false;
     }
+}
 
-    void on_recv_ready() {
-        if(data.size == 0) {
-            auto r = in->recv();
-            if(!r) return;
-            if(r->size > MTU) abort();
-            data = buff.as_buffer().slice(0, r->size);
-            r->copy_to(data);
-            on_write_ready();
+void FreePacketStream::write_ready() {
+    while(true) {
+        if(send_buffer_current.size == 0) {
+            reactor.schedule(on_send_ready);
+            break;
+        }
+        size_t wrote = stream->write(send_buffer_current);
+        if(wrote == 0) break;
+        send_buffer_current = send_buffer_current.slice(wrote);
+    }
+}
+
+void pipe(Reactor& reactor, PacketStream* in, PacketStream* out) {
+    new Piper(reactor, in, out);
+}
+
+Piper::Piper(Reactor& reactor, PacketStream* in, PacketStream* out): reactor(reactor),
+                                                                     in(in),
+                                                                     out(out),
+                                                                     buffer(MTU) {
+    in->set_on_recv_ready(std::bind(&Piper::recv_ready, this));
+    out->set_on_send_ready(std::bind(&Piper::send_ready, this));
+}
+
+void Piper::recv_ready() {
+    if(current)
+        return;
+
+    auto data = in->recv();
+    if(!data)
+        return;
+
+    assert(data->size <= MTU);
+
+    current = buffer.as_buffer().slice(0, data->size);
+    data->copy_to(*current);
+
+    reactor.schedule(std::bind(&Piper::send_ready, this));
+}
+
+void Piper::send_ready() {
+    if(current) {
+        if(out->send(*current)) {
+            current = boost::none;
+            reactor.schedule(std::bind(&Piper::recv_ready, this));
         }
     }
-
-    void on_write_ready() {
-        while(data.size != 0) {
-            size_t bytes = out->write(data);
-            if(bytes == 0) break;
-            data = data.slice(bytes);
-        }
-        if(data.size == 0) {
-            on_recv_ready();
-        }
-    }
-};
-
-void pipe(PacketStream* in, Stream* out) {
-    new PipePacketStreamToStream(in, out);
 }
