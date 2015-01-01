@@ -38,7 +38,7 @@ void ReorderStream::transport_recv_ready() {
         uint64_t seq = buff.convert<uint64_t>(0);
         Buffer user_data = buff.slice(8);
 
-        if(seq < next_send_seq) continue;
+        if(seq < next_recv_seq) continue;
 
         AllocBuffer final_buff(user_data.size);
         user_data.copy_to(final_buff.as_buffer());

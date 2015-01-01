@@ -3,6 +3,7 @@
 #include "misc.h"
 #include "exfunctional.h"
 #include "logging.h"
+#include "timer.h"
 
 int main() {
     Reactor reactor;
@@ -35,7 +36,9 @@ int main() {
     assert(p1[1]->send(Buffer::from_cstr("foobar")));
     assert(!p1[1]->send(Buffer::from_cstr("foobar")));
 
-    reactor.schedule([&]() {
+    Timer timer(reactor);
+
+    timer.once(1000 * 1000, [&]() {
         assert(p2[1]->send(Buffer::from_cstr("foobar")));
     });
 
