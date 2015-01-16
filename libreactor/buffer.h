@@ -8,6 +8,24 @@
 
 using size_t = std::size_t;
 
+template <class F, class T>
+class typealias {
+    F* data;
+public:
+    typealias(F* data): data(data) {}
+
+    operator T() {
+        T ret;
+        memcpy(&ret, data, sizeof(T));
+        return ret;
+    }
+
+    typealias<F, T>& operator=(const T& val) {
+        memcpy(data, &val, sizeof(T));
+        return *this;
+    }
+};
+
 class Buffer {
 public:
     Buffer(char* data, size_t size): size(size), data(data) {}
@@ -46,10 +64,10 @@ public:
     }
 
     template <class T>
-    T& convert(size_t pos) {
+    typealias<char, T> convert(size_t pos) {
         assert(pos + sizeof(T) <= size);
         // TODO: probably violates strict aliasing
-        return *((T*)(data + pos));
+        return typealias<char, T>(data + pos);
     }
 };
 
