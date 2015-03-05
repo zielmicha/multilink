@@ -28,6 +28,7 @@ add_library(multilink STATIC
   multilink/multilink.cpp
   multilink/packet_queue.cpp
   multilink/packet_stream_util.cpp
+  multilink/write_queue.cpp
   multilink/reorder_stream.cpp
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
@@ -104,3 +105,7 @@ target_link_libraries(PipeTest multilink reactor)
 add_executable(FreePacketStreamTest
   tests/free_packet_stream_test.cpp)
 target_link_libraries(FreePacketStreamTest multilink reactor)
+
+add_executable(WriteQueueTest
+  tests/write_queue_test.cpp)
+target_link_libraries(WriteQueueTest multilink reactor)
