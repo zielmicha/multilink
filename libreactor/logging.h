@@ -14,10 +14,10 @@
 #define LOG(args...)
 #endif
 
-#ifndef NO_DEBUG
+#ifdef LOG_DEBUG
 #define DEBUG LOG
 #else
-#define DEBUG(args..)
+#define DEBUG(args...)
 #endif
 
 void setup_crash_handlers();

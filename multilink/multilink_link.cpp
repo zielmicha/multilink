@@ -145,17 +145,16 @@ namespace Multilink {
     void Link::transport_read_ready() {
         //LOG("transport read ready");
         while(true) {
-            if(waiting_recv_packet) // out buffer is occupied, wait until recv is called
-                break;
-
             Buffer new_buffer = stream->read(recv_buffer.slice(recv_buffer_pos));
-            if(new_buffer.size == 0) // nothing read
-                break;
+            DEBUG("transport read " << new_buffer);
 
             recv_buffer_pos += new_buffer.size;
 
             // Parse zero or more packets.
-            while(try_parse_recv_packet()) ;
+            while(!waiting_recv_packet && try_parse_recv_packet()) ;
+
+            if(new_buffer.size == 0) // nothing read
+                break;
         }
     }
 
@@ -180,7 +179,9 @@ namespace Multilink {
     }
 
     void Link::parse_recv_packet(Buffer data) {
+        DEBUG("parse recv packet " << data);
         uint8_t type = data.convert<uint8_t>(2);
+        assert(!waiting_recv_packet);
         if(type == 0) { // data packet
             waiting_recv_packet = waiting_recv_packet_buffer.as_buffer().slice(0, data.size - HEADER_SIZE);
             data.slice(HEADER_SIZE).copy_to(*waiting_recv_packet);

@@ -1,6 +1,7 @@
 #include "multilink.h"
 #include "misc.h"
 #include "logging.h"
+#include "write_queue.h"
 
 int main() {
     Reactor reactor;
@@ -25,11 +26,12 @@ int main() {
         }
     };
 
-    timer.once(2000 * 1000, [&]() {
-        left.send(Buffer::from_cstr("second msg"));
-    });
+    WriteQueue queue {reactor, &left, 10000};
 
-    left.send(Buffer::from_cstr("foobar"));
+    for(int i=0; i < 50; i++) {
+        queue.send(Buffer::from_cstr("foobar1"));
+        queue.send(Buffer::from_cstr("foobar2"));
+    }
 
     reactor.run();
 }

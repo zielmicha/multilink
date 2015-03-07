@@ -1,4 +1,5 @@
 #include "write_queue.h"
+#include "logging.h"
 
 WriteQueue::WriteQueue(Reactor& reactor, PacketStream* output, size_t max_size) :
     output(output), queue(max_size) {
