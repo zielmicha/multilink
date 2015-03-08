@@ -49,6 +49,10 @@ public:
         memcpy(target.data, data, size);
     }
 
+    void set_zero() {
+        memset(data, 0, size);
+    }
+
     void delete_start(size_t end);
 
     std::string human_repr() const;

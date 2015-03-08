@@ -17,3 +17,12 @@ void WriteQueue::on_send_ready() {
     while(!queue.empty() && output->send(queue.front()))
         queue.pop_front();
 }
+
+void write_null_packets(PacketStream* output, size_t packet_size) {
+    output->set_on_send_ready([=]() {
+        AllocBuffer buffer {packet_size};
+        buffer.as_buffer().set_zero();
+
+        while(output->send(buffer.as_buffer())) ;
+    });
+}

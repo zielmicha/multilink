@@ -105,7 +105,7 @@ namespace Multilink {
     }
 
     void Link::send_ping() {
-        LOG(*this << " send_ping");
+        DEBUG(*this << " send_ping");
 
         StackBuffer<16> data;
         Buffer(data).convert<uint64_t>(0) = Timer::get_time();
@@ -116,7 +116,7 @@ namespace Multilink {
     }
 
     void Link::send_pong() {
-        LOG(*this << " send_pong");
+        DEBUG(*this << " send_pong");
         StackBuffer<16> data;
         Buffer(data).convert<uint64_t>(0) = last_pong_request_time;
         Buffer(data).convert<uint64_t>(8) = last_pong_request_seq;

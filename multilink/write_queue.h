@@ -16,4 +16,6 @@ public:
     bool send(const Buffer data);
 };
 
+void write_null_packets(PacketStream* output, size_t packet_size);
+
 #endif

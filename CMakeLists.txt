@@ -109,3 +109,7 @@ target_link_libraries(FreePacketStreamTest multilink reactor)
 add_executable(WriteQueueTest
   tests/write_queue_test.cpp)
 target_link_libraries(WriteQueueTest multilink reactor)
+
+add_executable(MLBandwidthTest
+  tests/ml_bandwidth_test.cpp)
+target_link_libraries(MLBandwidthTest multilink reactor)
