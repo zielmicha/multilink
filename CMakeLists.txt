@@ -6,9 +6,12 @@ set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt")
 
-include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink)
+include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11)
 
-set(COMMON_SRC
+add_library(json11 STATIC
+  ${CMAKE_SOURCE_DIR}/deps/json11/json11.cpp)
+
+add_library(reactor STATIC
   libreactor/reactor.cpp
   libreactor/common.cpp
   libreactor/epoll.cpp
@@ -22,8 +25,6 @@ set(COMMON_SRC
   libreactor/streamutil.cpp
   libreactor/throttled.cpp)
 
-add_library(reactor STATIC ${COMMON_SRC})
-
 add_library(multilink STATIC
   multilink/multilink.cpp
   multilink/packet_queue.cpp
@@ -34,3 +35,8 @@ add_library(multilink STATIC
   multilink/multilink_stats.cpp)
 
 include(tests/CMakeLists.txt)
+
+add_executable(app
+  app/app.cpp)
+
+target_link_libraries(app reactor multilink json11)
