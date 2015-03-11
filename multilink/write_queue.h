@@ -5,15 +5,20 @@
 #include "packet_queue.h"
 
 class WriteQueue {
-    PacketStream* output;
+    std::shared_ptr<PacketStream> output;
     PacketQueue queue;
 
     void on_send_ready();
 
+    WriteQueue(Reactor& reactor, std::shared_ptr<PacketStream> output, size_t max_size);
 public:
-    WriteQueue(Reactor& reactor, PacketStream* output, size_t max_size);
 
     bool send(const Buffer data);
+
+    static std::shared_ptr<WriteQueue> create(
+        Reactor& reactor,
+        std::shared_ptr<PacketStream> output,
+        size_t max_size);
 };
 
 void write_null_packets(PacketStream* output, size_t packet_size);

@@ -10,9 +10,9 @@ target_link_libraries(TCPTest reactor)
 add_executable(TimerTest tests/timer_test.cpp)
 target_link_libraries(TimerTest reactor)
 
-add_executable(TunTest multilink/craftertun.cpp
-  tests/craftertest.cpp)
-target_link_libraries(TunTest crafter reactor)
+#add_executable(TunTest multilink/craftertun.cpp
+#  tests/craftertest.cpp)
+#target_link_libraries(TunTest crafter reactor)
 
 add_executable(LinkTest
   tests/link_test.cpp

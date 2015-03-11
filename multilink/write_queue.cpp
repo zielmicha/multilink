@@ -1,9 +1,14 @@
 #include "write_queue.h"
 #include "logging.h"
 
-WriteQueue::WriteQueue(Reactor& reactor, PacketStream* output, size_t max_size) :
+WriteQueue::WriteQueue(Reactor& reactor, std::shared_ptr<PacketStream> output, size_t max_size) :
     output(output), queue(max_size) {
-    output->set_on_send_ready(std::bind(&WriteQueue::on_send_ready, this));
+}
+
+std::shared_ptr<WriteQueue> WriteQueue::create(Reactor& reactor, std::shared_ptr<PacketStream> output, size_t max_size) {
+    auto ptr = std::shared_ptr<WriteQueue>(new WriteQueue(reactor, output, max_size));
+    output->set_on_send_ready(std::bind(&WriteQueue::on_send_ready, ptr));
+    return ptr;
 }
 
 bool WriteQueue::send(const Buffer data) {
