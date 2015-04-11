@@ -5,8 +5,10 @@
 
 namespace UnixSocket {
     void listen(Reactor& reactor, std::string path, std::function<void(FD*)> accept_cb) {
+        unlink(path.c_str());
+
         struct sockaddr_un servaddr = {0};
-        int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+        int sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
 
         FD* fd = &reactor.take_fd(sockfd);
