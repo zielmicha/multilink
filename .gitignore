@@ -1,11 +1,4 @@
-/CMakeFiles
-/CMakeCache.txt
-/Makefile
-/ReactorTest
-/TunTest
-/ProcessTest
-/TCPTest
-/cmake_install.cmake
 /libcrafter-examples
 /libcrafter
 /build
+*.pyc
