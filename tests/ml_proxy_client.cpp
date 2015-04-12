@@ -11,14 +11,14 @@
 int main() {
     Reactor reactor;
 
-    Future<FD*> client_future;
+    Completer<FD*> client_future;
 
     TCP::listen(reactor, "0.0.0.0", 6002, [&](FD* sock) {
         LOG("client connected");
         client_future.result(sock);
     }).ignore();
 
-    FD* client = client_future.wait(reactor);
+    FD* client = client_future.future().wait(reactor);
 
     Multilink::Multilink mlink {reactor};
 

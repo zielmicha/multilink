@@ -17,7 +17,7 @@ namespace TCP {
         servaddr.sin_addr.s_addr = inet_addr(addr.c_str());
         servaddr.sin_port = htons(port);
 
-        Future<FD*> future;
+        Completer<FD*> completer;
         int res = connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
         if(res < 0 && errno != EINPROGRESS) {
@@ -25,31 +25,31 @@ namespace TCP {
         }
 
         if(res == 0) {
-            future = make_future(fd);
+            completer.result(fd);
         } else {
-            fd->on_write_ready = [fd, future, sockfd]() {
+            fd->on_write_ready = [fd, completer, sockfd]() {
                 int result;
                 socklen_t result_len = sizeof(result);
                 if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &result, &result_len) < 0) {
-                    future.result_failure(errno_get_exception());
+                    completer.result_failure(errno_get_exception());
                     return;
                 }
 
                 if (result != 0) {
                     errno = result;
-                    future.result_failure(errno_get_exception());
+                    completer.result_failure(errno_get_exception());
                     return;
                 }
 
-                if(!future.has_result()) {
+                if(!completer.future().has_result()) {
                     // reactor.later([fd]() { fd->on_write_ready(); })
-                    future.result(fd);
+                    completer.result(fd);
                 }
             };
             fd->on_error = fd->on_write_ready;
         }
 
-        return future;
+        return completer.future();
     }
 
     Future<unit> listen(Reactor& reactor, std::string addr, int port, std::function<void(FD*)> accept_cb) {

@@ -24,7 +24,8 @@ add_library(reactor STATIC
   libreactor/timer.cpp
   libreactor/streamutil.cpp
   libreactor/throttled.cpp
-  libreactor/unix_socket.cpp)
+  libreactor/unix_socket.cpp
+  libreactor/ioutil.cpp)
 
 add_library(multilink STATIC
   multilink/multilink.cpp

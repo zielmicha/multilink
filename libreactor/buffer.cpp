@@ -37,7 +37,9 @@ AllocBuffer::~AllocBuffer() {
     delete[] data;
 }
 
-AllocBuffer::AllocBuffer(AllocBuffer&& other): data(other.data), size(other.size) {
+AllocBuffer::AllocBuffer(AllocBuffer&& other): size(other.size), data(other.data) {
     other.size = 0;
-    other.data = NULL;
+    other.data = nullptr;
 }
+
+AllocBuffer::AllocBuffer(): size(0), data(nullptr) {}

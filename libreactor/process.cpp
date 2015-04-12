@@ -50,9 +50,9 @@ void Popen::call(std::function<void(int)> callback) {
 }
 
 Future<int> Popen::call() {
-    Future<int> r;
+    Completer<int> r;
     call(r.result_fn());
-    return r;
+    return r.future();
 }
 
 Future<unit> Popen::check_call() {

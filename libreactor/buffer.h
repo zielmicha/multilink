@@ -89,6 +89,7 @@ class AllocBuffer {
     char* data;
 public:
     AllocBuffer(size_t size);
+    AllocBuffer();
     ~AllocBuffer();
     AllocBuffer(AllocBuffer&&);
     AllocBuffer(const AllocBuffer&) = delete;
@@ -96,6 +97,15 @@ public:
     Buffer as_buffer() {
         return Buffer(data, size);
     }
+};
+
+template <typename T>
+class CastAsBuffer {
+public:
+    Buffer cast(T& t) {
+        return t.as_buffer();
+    }
+    typedef Buffer Target;
 };
 
 class BufferList {

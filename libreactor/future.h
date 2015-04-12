@@ -12,42 +12,51 @@ enum class FutureState {
 int printf(const char* format, ...);
 
 template <typename T>
-struct _FutureData {
+struct _BaseFutureData {
+    virtual T get_value() = 0;
+
     FutureState state;
-    T value;
     std::unique_ptr<std::exception> exception;
     std::function<void(T)> value_callback;
     std::function<void(std::unique_ptr<std::exception>)> exception_callback;
 };
 
+template <typename T>
+struct _NoCast {
+    T cast(const T& t) {
+        return t;
+    }
+    typedef T Target;
+};
+
 void _future_nop();
+
+template <typename T, typename CASTER = _NoCast<T> >
+struct _FutureData : public _BaseFutureData<typename CASTER::Target> {
+    T value;
+
+    _FutureData() {}
+    _FutureData(T&& value): value(std::move(value)) {}
+    _FutureData(const T& value): value(value) {}
+
+    typename CASTER::Target get_value() {
+        return CASTER().cast(value);
+    }
+};
 
 template <typename T>
 class Future {
-    std::shared_ptr<_FutureData<T> > data;
-
-    Future(std::shared_ptr<_FutureData<T> > data): data(data) {}
+    std::shared_ptr<_BaseFutureData<T> > data;
 public:
 
-    Future() {
-        data = std::shared_ptr<_FutureData<T> >(new _FutureData<T>);
-        data->state = FutureState::WAITING;
-
-        auto data_ptr = &(*data); // avoid cyclic reference
-        data->value_callback = [data_ptr](T value) {
-            data_ptr->state = FutureState::IMMEDIATE_VALUE;
-            data_ptr->value = value;
-        };
-        data->exception_callback = [data_ptr](std::unique_ptr<std::exception> ex) {
-            data_ptr->state = FutureState::IMMEDIATE_EXCEPTION;
-            data_ptr->exception = std::move(ex);
-        };
-    }
+    Future(std::shared_ptr<_BaseFutureData<T> > data): data(data) {}
 
     Future(T value) {
-        data = std::shared_ptr<_FutureData<T> >(new _FutureData<T>);
-        data->state = FutureState::IMMEDIATE_VALUE;
-        data->value = value;
+        auto dataptr = new _FutureData<T>;
+        dataptr->state = FutureState::IMMEDIATE_VALUE;
+        dataptr->value = value;
+
+        data = std::shared_ptr<_BaseFutureData<T> >(dataptr);
     }
 
     void on_success_or_failure(
@@ -55,7 +64,7 @@ public:
         const std::function<void(std::unique_ptr<std::exception>)>& fun_exc) const {
         switch(data->state) {
         case FutureState::IMMEDIATE_VALUE:
-            fun_value(data->value);
+            fun_value(data->get_value());
             break;
         case FutureState::IMMEDIATE_EXCEPTION:
             fun_exc(std::move(data->exception));
@@ -76,57 +85,13 @@ public:
     }
 
     template <typename R>
-    Future<R> then(std::function<Future<R>(T)> fun) const {
-        Future<R> f;
-        on_success_or_failure(
-            [f, fun](T val) {
-                Future<R> ret = fun(val);
-                ret.on_success(f.result_fn());
-            },
-            [f, fun](std::unique_ptr<std::exception> ex) {
-                f.result_failure(std::move(ex));
-            });
-        return f;
-    }
+    Future<R> then(std::function<Future<R>(T)> fun) const;
 
     template <typename R>
-    Future<R> then(std::function<R(T)> fun) const {
-        Future<R> f;
-        on_success_or_failure(
-            [=](T val) {
-                R ret = fun(val);
-                f.result(ret);
-            },
-            [=](std::unique_ptr<std::exception> ex) {
-                f.result_failure(ex);
-            });
-        return f;
-    }
-
-    // result being const is counter-intuitive, but
-    // Future is just a wrapper for _FutureData
-    void result(const T& ret) const {
-        assert(data->state == FutureState::WAITING);
-        data->state = FutureState::IMMEDIATE_VALUE;
-        data->value_callback(ret);
-    }
-
-    void result_failure(std::unique_ptr<std::exception> ex) const {
-        assert(data->state == FutureState::WAITING);
-        data->state = FutureState::IMMEDIATE_EXCEPTION;
-        data->exception_callback(std::move(ex));
-    }
+    Future<R> then(std::function<R(T)> fun) const;
 
     bool has_result() const {
         return data->state != FutureState::WAITING;
-    }
-
-    std::function<void(T)> result_fn() const {
-        auto data1 = data;
-        return [data1](T ret) {
-            Future self(data1);
-            self.result(ret);
-        };
     }
 
     T wait(Reactor& reactor) const {
@@ -141,6 +106,121 @@ public:
     }
 
     void ignore() const {
+    }
+};
+
+template <typename T, typename CASTER = _NoCast<T> >
+class _BaseCompleter {
+protected:
+    std::shared_ptr<_FutureData<T, CASTER> > data;
+
+    _BaseCompleter() {
+        auto data_ptr = &(*this->data); // avoid cyclic reference
+
+        data->exception_callback = [data_ptr](std::unique_ptr<std::exception> ex) {
+            data_ptr->state = FutureState::IMMEDIATE_EXCEPTION;
+            data_ptr->exception = std::move(ex);
+        };
+    }
+public:
+
+    void result_failure(std::unique_ptr<std::exception> ex) const {
+        assert(data->state == FutureState::WAITING);
+        data->state = FutureState::IMMEDIATE_EXCEPTION;
+        data->exception_callback(std::move(ex));
+    }
+
+    typedef Future<typename CASTER::Target> FutureType;
+
+    FutureType future() const {
+        return FutureType(data);
+    }
+};
+
+template <typename T, typename CASTER = _NoCast<T> >
+class Completer : public _BaseCompleter<T, CASTER> {
+public:
+    Completer() {
+        this->data = std::shared_ptr<_FutureData<T, CASTER> >(new _FutureData<T, CASTER>);
+        this->data->state = FutureState::WAITING;
+
+        auto data_ptr = &(*this->data); // avoid cyclic reference
+        this->data->value_callback = [data_ptr](T value) {
+            data_ptr->state = FutureState::IMMEDIATE_VALUE;
+            data_ptr->value = value;
+        };
+    }
+
+    Completer(const Completer& c) {
+        this->data = c.data;
+    }
+
+    void result(const T& ret) const {
+        assert(this->data->state == FutureState::WAITING);
+        this->data->state = FutureState::IMMEDIATE_VALUE;
+        this->data->value_callback(ret);
+    }
+
+    std::function<void(T)> result_fn() const {
+        Completer self = *this;
+        return [self](T ret) {
+            self.result(ret);
+        };
+    }
+};
+
+template <typename T>
+template <typename R>
+Future<R> Future<T>::then(std::function<Future<R>(T)> fun) const {
+    Completer<R> f;
+    on_success_or_failure(
+        [f, fun](T val) {
+            Future<R> ret = fun(val);
+            ret.on_success(f.result_fn());
+        },
+        [f, fun](std::unique_ptr<std::exception> ex) {
+            f.result_failure(std::move(ex));
+        });
+    return f.future();
+}
+
+template <typename T>
+template <typename R>
+Future<R> Future<T>::then(std::function<R(T)> fun) const {
+    Completer<R> f;
+    on_success_or_failure(
+        [=](T val) {
+            R ret = fun(val);
+            f.result(ret);
+        },
+        [=](std::unique_ptr<std::exception> ex) {
+            f.result_failure(ex);
+        });
+    return f.future();
+}
+
+
+template <typename T, typename CASTER = _NoCast<T> >
+class ImmediateCompleter : public _BaseCompleter<T, CASTER> {
+public:
+    ImmediateCompleter(T&& value) {
+        this->data = std::shared_ptr<_FutureData<T, CASTER> >(
+            new _FutureData<T, CASTER>(std::move(value)));
+        this->data->value_callback = [](typename CASTER::Target target) {};
+    }
+
+    T& value() const {
+        return this->data->value;
+    }
+
+    typename CASTER::Target cast_value() const {
+        return CASTER().cast(value());
+    }
+
+    void result() const {
+        assert(this->data->state == FutureState::WAITING);
+        this->data->state = FutureState::IMMEDIATE_VALUE;
+        this->data->value_callback(cast_value());
     }
 };
 
