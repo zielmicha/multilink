@@ -2,10 +2,11 @@
 #define IOUTIL_H_
 #include "future.h"
 #include "reactor.h"
+#include "bytestring.h"
 
 namespace ioutil {
-    Future<Buffer> read(Stream* fd, int size);
-    Future<unit> write(Stream* fd, Buffer data);
+    Future<ByteString> read(Stream* fd, int size);
+    Future<unit> write(Stream* fd, ByteString data);
 }
 
 #endif

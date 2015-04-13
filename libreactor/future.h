@@ -116,7 +116,7 @@ class _BaseCompleter {
 protected:
     std::shared_ptr<_FutureData<T, CASTER> > data;
 
-    _BaseCompleter() {
+    void init() {
         auto data_ptr = &(*this->data); // avoid cyclic reference
 
         data->exception_callback = [data_ptr](std::unique_ptr<std::exception> ex) {
@@ -151,6 +151,7 @@ public:
             data_ptr->state = FutureState::IMMEDIATE_VALUE;
             data_ptr->value = value;
         };
+        this->init();
     }
 
     Completer(const Completer& c) {
@@ -201,14 +202,19 @@ Future<R> Future<T>::then(std::function<R(T)> fun) const {
     return f.future();
 }
 
-
 template <typename T, typename CASTER = _NoCast<T> >
 class ImmediateCompleter : public _BaseCompleter<T, CASTER> {
 public:
     ImmediateCompleter(T&& value) {
         this->data = std::shared_ptr<_FutureData<T, CASTER> >(
             new _FutureData<T, CASTER>(std::move(value)));
+        this->data->state = FutureState::WAITING;
         this->data->value_callback = [](typename CASTER::Target target) {};
+        this->init();
+    }
+
+    ImmediateCompleter(const ImmediateCompleter& other) {
+        this->data = other.data;
     }
 
     T& value() const {

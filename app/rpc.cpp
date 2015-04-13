@@ -21,12 +21,14 @@ std::shared_ptr<RPCServer> RPCServer::create(
 }
 
 void RPCServer::accept(FD* fd) {
-    ioutil::read(fd, 4).then<Buffer>([=](Buffer data) {
-        uint32_t length = data.convert<uint32_t>(0);
+    std::cerr << "accepted unix connection fd=" << fd->fileno() << std::endl;
+    ioutil::read(fd, 4).then<ByteString>([=](ByteString data) {
+        uint32_t length = data.as_buffer().convert<uint32_t>(0);
+        std::cerr << "read " << length << std::endl;
         return ioutil::read(fd, length);
-    }).then<unit>([=](Buffer data) {
+    }).then<unit>([=](ByteString data) {
         std::string error;
-        auto msg = Json::parse(data, error);
+        auto msg = Json::parse(std::string(data), error);
         std::cerr << "packet " << msg.dump() << std::endl;
         return unit();
     });

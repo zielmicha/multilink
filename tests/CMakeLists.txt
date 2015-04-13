@@ -78,3 +78,7 @@ target_link_libraries(WriteQueueTest multilink reactor)
 add_executable(MLBandwidthTest
   tests/ml_bandwidth_test.cpp)
 target_link_libraries(MLBandwidthTest multilink reactor)
+
+add_executable(IOUtilTest
+  tests/ioutil_test.cpp)
+target_link_libraries(IOUtilTest reactor)
