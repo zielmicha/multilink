@@ -42,4 +42,10 @@ AllocBuffer::AllocBuffer(AllocBuffer&& other): size(other.size), data(other.data
     other.data = nullptr;
 }
 
+AllocBuffer AllocBuffer::copy(Buffer data) {
+    AllocBuffer n {data.size};
+    data.copy_to(n.as_buffer());
+    return n;
+}
+
 AllocBuffer::AllocBuffer(): size(0), data(nullptr) {}

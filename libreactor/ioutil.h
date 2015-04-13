@@ -4,8 +4,8 @@
 #include "reactor.h"
 
 namespace ioutil {
-    Future<Buffer> read(FD* fd, int size);
-    Future<unit> write(FD* fd, Buffer data);
+    Future<Buffer> read(Stream* fd, int size);
+    Future<unit> write(Stream* fd, Buffer data);
 }
 
 #endif

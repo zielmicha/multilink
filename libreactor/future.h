@@ -1,3 +1,5 @@
+#ifndef FUTURE_H_
+#define FUTURE_H_
 #include "reactor.h"
 #include <cassert>
 
@@ -228,3 +230,5 @@ template <typename T>
 Future<T> make_future(const T& val) {
     return Future<T>(val);
 }
+
+#endif

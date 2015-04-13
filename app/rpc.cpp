@@ -1,5 +1,10 @@
 #include "rpc.h"
 #include "unix_socket.h"
+#include "ioutil.h"
+#include "json11.hpp"
+#include <iostream>
+
+using json11::Json;
 
 RPCServer::RPCServer(Reactor& reactor, OnMessageCallback on_message):
     reactor(reactor), on_message(on_message) {
@@ -16,5 +21,13 @@ std::shared_ptr<RPCServer> RPCServer::create(
 }
 
 void RPCServer::accept(FD* fd) {
-
+    ioutil::read(fd, 4).then<Buffer>([=](Buffer data) {
+        uint32_t length = data.convert<uint32_t>(0);
+        return ioutil::read(fd, length);
+    }).then<unit>([=](Buffer data) {
+        std::string error;
+        auto msg = Json::parse(data, error);
+        std::cerr << "packet " << msg.dump() << std::endl;
+        return unit();
+    });
 }

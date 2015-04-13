@@ -94,6 +94,8 @@ public:
     AllocBuffer(AllocBuffer&&);
     AllocBuffer(const AllocBuffer&) = delete;
 
+    static AllocBuffer copy(Buffer);
+
     Buffer as_buffer() {
         return Buffer(data, size);
     }
