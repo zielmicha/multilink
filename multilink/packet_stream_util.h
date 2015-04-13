@@ -14,9 +14,11 @@ class FreePacketStream: public PacketStream {
     void write_ready();
     void read_ready();
 
-public:
     FreePacketStream(Reactor& reactor, Stream* stream);
+public:
     FreePacketStream(const FreePacketStream&) = delete;
+
+    static std::shared_ptr<FreePacketStream> create(Reactor& reactor, Stream* stream);
 
     optional<Buffer> recv();
     bool send(const Buffer data);
@@ -37,9 +39,13 @@ class Piper {
     AllocBuffer buffer;
     optional<Buffer> current;
 public:
-    Piper(Reactor& reactor, PacketStream* in, PacketStream* out);
+    Piper(Reactor& reactor,
+          PacketStream* in,
+          PacketStream* out);
 };
 
-void pipe(Reactor& reactor, PacketStream* in, PacketStream* out);
+void pipe(Reactor& reactor,
+          PacketStream* in,
+          PacketStream* out);
 
 #endif

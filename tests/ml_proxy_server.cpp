@@ -25,10 +25,10 @@ int main() {
     }).ignore();
 
     ReorderStream out {&mlink};
-    FreePacketStream ptarget {reactor, target};
+    auto ptarget = FreePacketStream::create(reactor, target);
 
-    pipe(reactor, &ptarget, &out);
-    pipe(reactor, &out, &ptarget);
+    pipe(reactor, &*ptarget, &out);
+    pipe(reactor, &out, &*ptarget);
 
     reactor.run();
 }

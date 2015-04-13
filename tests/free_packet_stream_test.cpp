@@ -8,7 +8,7 @@ int main() {
     Reactor reactor;
     std::vector<FD*> fds = fd_pair(reactor);
 
-    auto pstream = new FreePacketStream(reactor, fds[1]);
+    auto pstream = FreePacketStream::create(reactor, fds[1]);
 
     fds[0]->set_on_read_ready([&]() {
         StackBuffer<1024> data;

@@ -9,8 +9,13 @@ FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream): reactor(re
                                                                       send_buffer(MTU),
                                                                       send_buffer_current(NULL, 0),
                                                                       recv_buffer(MTU) {
-    stream->set_on_write_ready(std::bind(&FreePacketStream::write_ready, this));
-    stream->set_on_read_ready(std::bind(&FreePacketStream::read_ready, this));
+}
+
+std::shared_ptr<FreePacketStream> FreePacketStream::create(Reactor& reactor, Stream* stream) {
+    std::shared_ptr<FreePacketStream> self {new FreePacketStream(reactor, stream)};
+    stream->set_on_write_ready(std::bind(&FreePacketStream::write_ready, self));
+    stream->set_on_read_ready(std::bind(&FreePacketStream::read_ready, self));
+    return self;
 }
 
 optional<Buffer> FreePacketStream::recv() {
@@ -49,7 +54,9 @@ void FreePacketStream::write_ready() {
     }
 }
 
-void pipe(Reactor& reactor, PacketStream* in, PacketStream* out) {
+void pipe(Reactor& reactor,
+          PacketStream* in, PacketStream* out) {
+    // FIXME: memory leak
     new Piper(reactor, in, out);
 }
 

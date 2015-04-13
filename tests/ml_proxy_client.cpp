@@ -29,10 +29,10 @@ int main() {
     });
 
     ReorderStream out {&mlink};
-    FreePacketStream pclient {reactor, client};
+    auto pclient = FreePacketStream::create(reactor, client);
 
-    pipe(reactor, &pclient, &out);
-    pipe(reactor, &out, &pclient);
+    pipe(reactor, &*pclient, &out);
+    pipe(reactor, &out, &*pclient);
 
     reactor.run();
 }

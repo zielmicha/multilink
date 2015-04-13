@@ -23,7 +23,7 @@ int main() {
         }
     };
 
-    auto left_packet = std::make_shared<FreePacketStream>(reactor, fds[0]);
+    auto left_packet = FreePacketStream::create(reactor, fds[0]);
     auto queue = WriteQueue::create(reactor, left_packet, 10000);
     for(int i=0; i < 100; i++) {
         assert(queue->send(Buffer::from_cstr("Foobar1")));
