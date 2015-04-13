@@ -4,7 +4,7 @@
 #include <memory>
 #include "json11.hpp"
 
-using namespace json11;
+using json11::Json;
 
 class RPCStream;
 
@@ -22,6 +22,7 @@ private:
               OnMessageCallback on_message);
 
     void accept(FD* sock);
+    void read_message(std::shared_ptr<RPCStream> stream);
 public:
     static std::shared_ptr<RPCServer> create(
         Reactor& reactor,
@@ -31,8 +32,16 @@ public:
 };
 
 class RPCStream {
+    FD* fd;
+    bool abandoned = false;
+
+    friend class RPCServer;
 public:
-    FD* abandon();
+    FD* abandon() {
+        abandoned = true;
+        return fd;
+    }
+
     void write(Json data);
 };
 
