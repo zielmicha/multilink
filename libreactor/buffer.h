@@ -70,7 +70,6 @@ public:
     template <class T>
     typealias<char, T> convert(size_t pos) {
         assert(pos + sizeof(T) <= size);
-        // TODO: probably violates strict aliasing
         return typealias<char, T>(data + pos);
     }
 };

@@ -1,43 +1,54 @@
 #include "ioutil.h"
 #include "misc.h"
+#include <cassert>
 
 namespace ioutil {
 
     Future<ByteString> read(Stream* fd, int size) {
         std::shared_ptr<int> pointer = std::make_shared<int>(0);
-        ImmediateCompleter<ByteString> result {ByteString(size)};
+        ImmediateCompleter<ByteString> completer {ByteString(size)};
         *pointer = 0;
 
-        fd->set_on_read_ready([fd, size, pointer, result]() {
+        auto on_read = ([=]() {
             while(true) {
-                Buffer r = fd->read(result.value().as_buffer().slice(*pointer));
+                Buffer r = fd->read(completer.value().as_buffer().slice(*pointer));
                 if(r.size == 0) break;
                 *pointer += r.size;
                 if(*pointer == size) {
+                    auto completerPtr = completer;
                     fd->set_on_read_ready(nothing);
-                    result.result();
+                    completerPtr.result();
+                    break;
                 }
             }
         });
 
-        return result.future();
+        fd->set_on_read_ready(on_read);
+        on_read();
+
+        return completer.future();
     }
 
     Future<unit> write(Stream* fd, ByteString data) {
         std::shared_ptr<int> pointer = std::make_shared<int>(0);
         Completer<unit> completer;
 
-        fd->set_on_write_ready([=]() {
+        auto on_write = ([=]() {
             while(true) {
                 int wrote = fd->write(data.as_buffer().slice(*pointer));
                 if(wrote == 0) break;
                 *pointer += wrote;
                 if(*pointer == data.size()) {
+                    auto completerPtr = completer;
                     fd->set_on_write_ready(nothing);
-                    completer.result({});
+                    completerPtr.result({});
+                    break;
                 }
             }
         });
+
+        fd->set_on_write_ready(on_write);
+        on_write();
 
         return completer.future();
     }

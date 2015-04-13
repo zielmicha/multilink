@@ -16,6 +16,7 @@ int printf(const char* format, ...);
 template <typename T>
 struct _BaseFutureData {
     virtual T get_value() = 0;
+    virtual ~_BaseFutureData() {}
 
     FutureState state;
     std::unique_ptr<std::exception> exception;
@@ -49,16 +50,16 @@ struct _FutureData : public _BaseFutureData<typename CASTER::Target> {
 template <typename T>
 class Future {
     std::shared_ptr<_BaseFutureData<T> > data;
+
 public:
+    explicit Future(std::shared_ptr<_BaseFutureData<T> > data): data(data) {}
 
-    Future(std::shared_ptr<_BaseFutureData<T> > data): data(data) {}
-
-    Future(T value) {
+    static Future<T> make_immediate(T value) {
         auto dataptr = new _FutureData<T>;
         dataptr->state = FutureState::IMMEDIATE_VALUE;
         dataptr->value = value;
 
-        data = std::shared_ptr<_BaseFutureData<T> >(dataptr);
+        return Future(std::shared_ptr<_BaseFutureData<T> >(dataptr));
     }
 
     void on_success_or_failure(
@@ -114,7 +115,7 @@ public:
 template <typename T, typename CASTER = _NoCast<T> >
 class _BaseCompleter {
 protected:
-    std::shared_ptr<_FutureData<T, CASTER> > data;
+    std::shared_ptr<_FutureData<T, CASTER> > data = nullptr;
 
     void init() {
         auto data_ptr = &(*this->data); // avoid cyclic reference
@@ -143,7 +144,7 @@ template <typename T, typename CASTER = _NoCast<T> >
 class Completer : public _BaseCompleter<T, CASTER> {
 public:
     Completer() {
-        this->data = std::shared_ptr<_FutureData<T, CASTER> >(new _FutureData<T, CASTER>);
+        this->data = std::make_shared<_FutureData<T, CASTER> >();
         this->data->state = FutureState::WAITING;
 
         auto data_ptr = &(*this->data); // avoid cyclic reference
@@ -197,7 +198,7 @@ Future<R> Future<T>::then(std::function<R(T)> fun) const {
             f.result(ret);
         },
         [=](std::unique_ptr<std::exception> ex) {
-            f.result_failure(ex);
+            f.result_failure(std::move(ex));
         });
     return f.future();
 }
@@ -234,7 +235,7 @@ public:
 
 template <typename T>
 Future<T> make_future(const T& val) {
-    return Future<T>(val);
+    return Future<T>::make_immediate(val);
 }
 
 #endif

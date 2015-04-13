@@ -37,7 +37,7 @@ public:
     }                                                   \
     void set_on_error(std::function<void()> f) {        \
         on_error = f;                                   \
-    }                                                   \
+    }
 
 class FD: public Stream {
 private:
