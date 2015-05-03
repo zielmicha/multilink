@@ -103,7 +103,7 @@ optional<Buffer> LengthPacketStream::recv() {
 
             reactor.schedule(std::bind(&LengthPacketStream::read_ready, this));
 
-            return recv_caller_buffer.as_buffer();
+            return recv_caller_buffer.as_buffer().slice(expected_size);
         }
     }
     return boost::none;

@@ -39,6 +39,10 @@ public:
             auto target = LengthPacketStream::create(reactor, take_fd(stream_fd));
             pipe(reactor, multilinks[num], target);
             pipe(reactor, target, multilinks[num]);
+        } else if(type == "add-link") {
+            int num = message["num"].int_value();
+            int stream_fd = message["stream_fd"].int_value();
+            multilinks[num]->add_link(take_fd(stream_fd), message["name"].string_value());
         } else {
             std::cerr << "bad type " << type << std::endl;
         }
