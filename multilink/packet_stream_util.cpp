@@ -4,11 +4,9 @@
 
 const int MTU = 4096;
 
-FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream): reactor(reactor),
-                                                                      stream(stream),
-                                                                      send_buffer(MTU),
-                                                                      send_buffer_current(NULL, 0),
-                                                                      recv_buffer(MTU) {
+FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream):
+    FreeWriterPacketStream(reactor, stream),
+    recv_buffer(MTU) {
 }
 
 std::shared_ptr<FreePacketStream> FreePacketStream::create(Reactor& reactor, Stream* stream) {
@@ -30,7 +28,15 @@ void FreePacketStream::read_ready() {
     on_recv_ready();
 }
 
-bool FreePacketStream::send(const Buffer data) {
+// ----- FreeWriterPacketStream -----
+
+FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, Stream* stream):
+    reactor(reactor),
+    stream(stream),
+    send_buffer(MTU),
+    send_buffer_current(NULL, 0) {}
+
+bool FreeWriterPacketStream::send(const Buffer data) {
     assert(data.size <= MTU);
     if(send_buffer_current.size == 0) {
         send_buffer_current = send_buffer.as_buffer().slice(0, data.size);
@@ -42,7 +48,7 @@ bool FreePacketStream::send(const Buffer data) {
     }
 }
 
-void FreePacketStream::write_ready() {
+void FreeWriterPacketStream::write_ready() {
     while(true) {
         if(send_buffer_current.size == 0) {
             reactor.schedule(on_send_ready);
@@ -54,18 +60,86 @@ void FreePacketStream::write_ready() {
     }
 }
 
-void pipe(Reactor& reactor,
-          PacketStream* in, PacketStream* out) {
-    // FIXME: memory leak
-    new Piper(reactor, in, out);
+// ----- LengthPacketStream -----
+
+LengthPacketStream::LengthPacketStream(Reactor& reactor, Stream* stream):
+    FreeWriterPacketStream(reactor, stream),
+    recv_buffer(MTU * 2),
+    recv_caller_buffer(MTU),
+    recv_buffer_pos(0) {}
+
+std::shared_ptr<LengthPacketStream> LengthPacketStream::create(
+    Reactor& reactor, Stream* stream) {
+    std::shared_ptr<LengthPacketStream> self {new LengthPacketStream(reactor, stream)};
+    stream->set_on_write_ready(std::bind(&LengthPacketStream::write_ready, self));
+    stream->set_on_read_ready(std::bind(&LengthPacketStream::read_ready, self));
+    return self;
 }
 
-Piper::Piper(Reactor& reactor, PacketStream* in, PacketStream* out): reactor(reactor),
-                                                                     in(in),
-                                                                     out(out),
-                                                                     buffer(MTU) {
-    in->set_on_recv_ready(std::bind(&Piper::recv_ready, this));
-    out->set_on_send_ready(std::bind(&Piper::send_ready, this));
+void LengthPacketStream::read_ready() {
+    while(true) {
+        Buffer data_read = stream->read(recv_buffer.as_buffer().slice(recv_buffer_pos));
+        if(data_read.size == 0) break;
+        recv_buffer_pos += data_read.size;
+        if(recv_buffer_pos >= 4) {
+            auto expected_size = recv_buffer.as_buffer().convert<uint32_t>(0);
+            if(recv_buffer_pos >= expected_size + 4) {
+                on_recv_ready();
+            }
+        }
+    }
+}
+
+optional<Buffer> LengthPacketStream::recv() {
+    // FIXME: copy
+    if(recv_buffer_pos >= 4) {
+        auto expected_size = recv_buffer.as_buffer().convert<uint32_t>(0);
+        if(expected_size > MTU) // FIXME: report error
+            return boost::none;
+        if(recv_buffer_pos >= expected_size + 4) {
+            recv_buffer.as_buffer().slice(4, expected_size).copy_to(
+                recv_caller_buffer.as_buffer());
+            recv_buffer.as_buffer().delete_start(expected_size + 4);
+
+            reactor.schedule(std::bind(&LengthPacketStream::read_ready, this));
+
+            return recv_caller_buffer.as_buffer();
+        }
+    }
+    return boost::none;
+}
+
+bool LengthPacketStream::send(const Buffer data) {
+    // FIXME: not optimal...
+    AllocBuffer new_buffer { data.size + 4 };
+    data.copy_to(new_buffer.as_buffer().slice(4));
+    new_buffer.as_buffer().convert<uint32_t>(0) = data.size;
+
+    return this->FreeWriterPacketStream::send(new_buffer.as_buffer());
+}
+
+// ----- Piping -----
+
+void pipe(Reactor& reactor,
+          std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out) {
+    Piper::create(reactor, in, out);
+}
+
+Piper::Piper(Reactor& reactor,
+             std::shared_ptr<PacketStream> in,
+             std::shared_ptr<PacketStream> out): reactor(reactor),
+                                                 in(in),
+                                                 out(out),
+                                                 buffer(MTU) {
+}
+
+std::shared_ptr<Piper> Piper::create(Reactor& reactor,
+                   std::shared_ptr<PacketStream> in,
+                   std::shared_ptr<PacketStream> out) {
+    std::shared_ptr<Piper> piper {new Piper(reactor, in, out)};
+    in->set_on_recv_ready(std::bind(&Piper::recv_ready, piper));
+    out->set_on_send_ready(std::bind(&Piper::send_ready, piper));
+    return piper;
 }
 
 void Piper::recv_ready() {

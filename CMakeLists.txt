@@ -43,4 +43,4 @@ add_executable(app
   app/app.cpp
   app/rpc.cpp)
 
-target_link_libraries(app reactor multilink json11)
+target_link_libraries(app multilink reactor json11)
