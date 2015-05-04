@@ -1,7 +1,11 @@
+# coding=utf-8
 import socket
 import struct
 import json
 import threading
+import time
+import collections
+import os
 
 class Connection(object):
     def __init__(self):
@@ -28,6 +32,11 @@ class Connection(object):
         self.send({'type': 'add-link', 'name': name,
                    'num': num, 'stream_fd': stream_fd})
 
+    def limit_stream(self, stream_fd, buffsize, delay, mbps):
+        self.send({'type': 'limit-stream', 'stream_fd': stream_fd,
+                   'buffsize': buffsize, 'mbps': mbps,
+                   'delay': delay})
+
 class LengthPacketStream(object):
     def __init__(self, f):
         self.f = f
@@ -51,14 +60,22 @@ def pipe(a, b):
             b.flush()
 
     t = threading.Thread(target=do)
-    # t.daemon = True
+    t.daemon = True
     t.start()
 
 ctl = Connection()
-t0 = Connection().provide_stream(10)
-t1 = Connection().provide_stream(11)
-pipe(t0, t1)
-pipe(t1, t0)
+
+def add_pair(k, delay, buffsize, mbps):
+    t0 = Connection().provide_stream(k + 0)
+    t1 = Connection().provide_stream(k + 1)
+
+    pipe(t0, t1)
+    pipe(t1, t0)
+
+    ctl.limit_stream(k, delay=delay, buffsize=buffsize, mbps=mbps)
+
+    ctl.add_link(num=0, stream_fd=k + 0, name=str(k + 0))
+    ctl.add_link(num=1, stream_fd=k + 1, name=str(k + 1))
 
 m0 = LengthPacketStream(Connection().provide_stream(0))
 m1 = LengthPacketStream(Connection().provide_stream(1))
@@ -66,8 +83,63 @@ m1 = LengthPacketStream(Connection().provide_stream(1))
 ctl.make_multilink(num=0, stream_fd=0)
 ctl.make_multilink(num=1, stream_fd=1)
 
-ctl.add_link(num=0, stream_fd=10, name='10')
-ctl.add_link(num=1, stream_fd=11, name='11')
+add_pair(10,
+         delay=0 * 1000, buffsize=1000 * 1000, mbps=40)
 
-m0.send('Foobar')
-print m1.recv()
+add_pair(20,
+         delay=0 * 1000, buffsize=1000 * 1000, mbps=40)
+
+count = 10000
+size = 2048
+
+def send_data():
+    for i in xrange(count):
+        m0.send(struct.pack('I', i) + ' ' * (size - 4))
+    print 'sent'
+
+t = threading.Thread(target=send_data)
+t.daemon = True
+t.start()
+
+timeframe = 0.01
+collected = collections.defaultdict(int)
+start = time.time()
+
+ifound_list = []
+
+for i in xrange(count):
+    data = m1.recv()
+    assert len(data) == size
+    ifound, = struct.unpack('I', data[:4])
+    ifound_list.append(ifound)
+
+    if i % 1000 == 0:
+        print 'read', i
+
+    t = time.time() - start
+    collected[int(t / timeframe)] += size
+
+assert(set(ifound_list) == set(range(count)))
+
+def get_term_width():
+    rows, columns = os.popen('stty size', 'r').read().split()
+    return int(columns)
+
+def draw_graph(collected):
+    term_width = get_term_width()
+
+    tick = '▇'
+    max_value = max(collected.values()) * 2
+
+    space = term_width - 20
+
+    unit = max_value / space
+
+    for i in xrange(max(collected.keys()) + 1):
+        value = int(collected[i] / unit)
+        label = '%d ms %d kBps' % (i * timeframe * 1000, collected[i] / timeframe / 1024)
+        print label.ljust(20), tick * value
+
+print 'finish'
+
+draw_graph(collected)
