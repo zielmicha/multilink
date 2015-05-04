@@ -93,17 +93,17 @@ void LengthPacketStream::read_ready() {
 optional<Buffer> LengthPacketStream::recv() {
     // FIXME: copy
     if(recv_buffer_pos >= 4) {
-        auto expected_size = recv_buffer.as_buffer().convert<uint32_t>(0);
-        if(expected_size > MTU) // FIXME: report error
-            return boost::none;
+        uint32_t expected_size = recv_buffer.as_buffer().convert<uint32_t>(0);
+        assert(expected_size <= MTU);
         if(recv_buffer_pos >= expected_size + 4) {
             recv_buffer.as_buffer().slice(4, expected_size).copy_to(
                 recv_caller_buffer.as_buffer());
             recv_buffer.as_buffer().delete_start(expected_size + 4);
+            recv_buffer_pos -= expected_size + 4;
 
             reactor.schedule(std::bind(&LengthPacketStream::read_ready, this));
 
-            return recv_caller_buffer.as_buffer().slice(expected_size);
+            return recv_caller_buffer.as_buffer().slice(0, expected_size);
         }
     }
     return boost::none;
@@ -121,22 +121,25 @@ bool LengthPacketStream::send(const Buffer data) {
 // ----- Piping -----
 
 void pipe(Reactor& reactor,
-          std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out) {
-    Piper::create(reactor, in, out);
+          std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
+          size_t mtu) {
+    Piper::create(reactor, in, out, mtu);
 }
 
 Piper::Piper(Reactor& reactor,
              std::shared_ptr<PacketStream> in,
-             std::shared_ptr<PacketStream> out): reactor(reactor),
+             std::shared_ptr<PacketStream> out,
+             size_t mtu): reactor(reactor),
                                                  in(in),
                                                  out(out),
-                                                 buffer(MTU) {
+                                                 buffer(mtu) {
 }
 
 std::shared_ptr<Piper> Piper::create(Reactor& reactor,
-                   std::shared_ptr<PacketStream> in,
-                   std::shared_ptr<PacketStream> out) {
-    std::shared_ptr<Piper> piper {new Piper(reactor, in, out)};
+                                     std::shared_ptr<PacketStream> in,
+                                     std::shared_ptr<PacketStream> out,
+                                     size_t mtu) {
+    std::shared_ptr<Piper> piper {new Piper(reactor, in, out, mtu)};
     in->set_on_recv_ready(std::bind(&Piper::recv_ready, piper));
     out->set_on_send_ready(std::bind(&Piper::send_ready, piper));
     return piper;
@@ -150,7 +153,7 @@ void Piper::recv_ready() {
     if(!data)
         return;
 
-    assert(data->size <= MTU);
+    assert(data->size <= buffer.as_buffer().size);
 
     current = buffer.as_buffer().slice(0, data->size);
     data->copy_to(*current);

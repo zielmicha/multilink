@@ -3,11 +3,10 @@
 #include "logging.h"
 #include <arpa/inet.h>
 
-const size_t MTU = 4096;
-const size_t HEADER_SIZE = 3;
-const uint64_t PING_INTERVAL = 1000 * 1000 * 1;
-
 namespace Multilink {
+    const size_t MTU = Multilink::LINK_MTU;
+    const uint64_t PING_INTERVAL = 1000 * 1000 * 1;
+
     Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
                                                   stream(stream),
                                                   timer(reactor),

@@ -32,11 +32,11 @@ class LengthPacketStream(object):
     def __init__(self, f):
         self.f = f
 
-    def read(self):
+    def recv(self):
         length, = struct.unpack('I', self.f.read(4))
         return self.f.read(length)
 
-    def write(self, data):
+    def send(self, data):
         self.f.write(struct.pack('I', len(data)))
         self.f.write(data)
         self.f.flush()
@@ -48,6 +48,7 @@ def pipe(a, b):
             if not d:
                 break
             b.write(d)
+            b.flush()
 
     t = threading.Thread(target=do)
     # t.daemon = True
@@ -68,5 +69,5 @@ ctl.make_multilink(num=1, stream_fd=1)
 ctl.add_link(num=0, stream_fd=10, name='10')
 ctl.add_link(num=1, stream_fd=11, name='11')
 
-m0.write('Foobar')
-print m1.read()
+m0.send('Foobar')
+print m1.recv()

@@ -11,6 +11,7 @@ namespace Multilink {
     }
 
     bool Multilink::send(const Buffer data) {
+        assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
         bool pushed = queue.push_back(data);
         if(was_empty) {

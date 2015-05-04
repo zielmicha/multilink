@@ -67,15 +67,18 @@ class Piper {
 
     Piper(Reactor& reactor,
           std::shared_ptr<PacketStream> in,
-          std::shared_ptr<PacketStream> out);
+          std::shared_ptr<PacketStream> out,
+          size_t mtu);
 public:
     static std::shared_ptr<Piper> create(Reactor& reactor,
-                                  std::shared_ptr<PacketStream> in,
-                                  std::shared_ptr<PacketStream> out);
+                                         std::shared_ptr<PacketStream> in,
+                                         std::shared_ptr<PacketStream> out,
+                                         size_t mtu);
 };
 
 void pipe(Reactor& reactor,
-          std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out);
+          std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
+          size_t mtu=4096);
 void pipe(Reactor& reactor,
           std::shared_ptr<Stream> in, std::shared_ptr<Stream> out);
 
