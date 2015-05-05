@@ -15,6 +15,7 @@ const uint64_t EPOCH_INF = 1ull << 63;
 #endif
 
 size_t FD::write(const Buffer data) {
+    assert(data.size != 0);
     int ret = ::write(fd, data.data, data.size);
     if(ret < 0) {
         if(errno == EAGAIN)

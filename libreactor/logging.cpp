@@ -6,6 +6,8 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <time.h>
 
 static void handler(int sig) {
   void *array[10];
@@ -24,6 +26,20 @@ void setup_crash_handlers() {
   signal(SIGSEGV, handler);
   signal(SIGINT, handler);
   signal(SIGABRT, handler);
+}
+
+std::string current_time() {
+    timeval c_time;
+    gettimeofday(&c_time, NULL);
+    int milli = c_time.tv_usec / 1000;
+
+    char buffer1[80];
+    strftime(buffer1, sizeof(buffer1), "%H:%M:%S", localtime(&c_time.tv_sec));
+
+    char buffer2[90];
+    sprintf(buffer2, "%s.%03d", buffer1, milli);
+
+    return buffer2;
 }
 
 std::string url_encode(std::string value) {

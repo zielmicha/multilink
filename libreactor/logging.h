@@ -8,7 +8,7 @@
 #endif
 
 #ifndef NO_LOG
-#define LOG(args...) std::cerr << LOGGER_NAME << ": " << args << std::endl;
+#define LOG(args...) std::cerr << current_time() << " " << LOGGER_NAME << ": " << args << std::endl
 #else
 #define NO_DEBUG
 #define LOG(args...)
@@ -20,6 +20,7 @@
 #define DEBUG(args...)
 #endif
 
+std::string current_time();
 void setup_crash_handlers();
 std::string url_encode(std::string value);
 

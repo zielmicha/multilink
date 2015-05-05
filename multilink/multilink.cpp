@@ -10,6 +10,10 @@ namespace Multilink {
 
     }
 
+    void Multilink::shuffle_links() {
+        random_shuffle(links.begin(), links.end());
+    }
+
     bool Multilink::send(const Buffer data) {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
@@ -22,6 +26,7 @@ namespace Multilink {
 
     optional<Buffer> Multilink::recv() {
         optional<Buffer> result;
+        shuffle_links();
         for(auto& link: links) {
             result = link->recv();
             if(result) return result;
@@ -63,6 +68,7 @@ namespace Multilink {
     }
 
     void Multilink::some_link_send_ready() {
+        shuffle_links();
         for(auto& link: links)
             link_send_ready(&*link);
     }

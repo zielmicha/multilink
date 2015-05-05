@@ -13,6 +13,7 @@ class ThrottledStream: public Stream {
     void write_ready();
     void read_ready();
     void error();
+    bool can_transmit();
 
 public:
     ThrottledStream(Reactor& reactor, Stream* stream, double mbps);

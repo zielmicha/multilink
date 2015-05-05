@@ -41,6 +41,7 @@ namespace Multilink {
             if(send_buffer_current.size == 0) {
                 // Send buffer is empty - schedule new packet.
                 // edge-triggering
+                DEBUG(*this << " transport_write_ready edge " << send_buffer_edge);
                 if(send_buffer_edge) {
                     send_buffer_edge = false;
 
@@ -58,7 +59,10 @@ namespace Multilink {
             while(send_buffer_current.size != 0) {
                 size_t bytes = stream->write(send_buffer_current);
                 bytes_written += bytes;
-                if(bytes == 0) goto finish;
+                if(bytes == 0) {
+                    DEBUG(*this << " transport_write_ready output full real:" << real);
+                    goto finish;
+                }
 
                 send_buffer_current = send_buffer_current.slice(bytes);
             }
@@ -92,6 +96,7 @@ namespace Multilink {
             send_pong();
             return true;
         } else if(should_ping()) {
+            LOG(*this << " send_aux " << " should_ping");
             send_ping();
             return true;
         } else {
@@ -145,12 +150,15 @@ namespace Multilink {
         //LOG("transport read ready");
         while(true) {
             Buffer new_buffer = stream->read(recv_buffer.slice(recv_buffer_pos));
-            DEBUG("transport read " << new_buffer);
+            DEBUG(*this << " transport read " << new_buffer.size);
 
             recv_buffer_pos += new_buffer.size;
 
             // Parse zero or more packets.
             while(!waiting_recv_packet && try_parse_recv_packet()) ;
+
+            if(waiting_recv_packet)
+                DEBUG(*this << " finishing read loop - packet waits for recv");
 
             if(new_buffer.size == 0) // nothing read
                 break;
@@ -178,16 +186,18 @@ namespace Multilink {
     }
 
     void Link::parse_recv_packet(Buffer data) {
-        DEBUG("parse recv packet " << data);
+        DEBUG(*this << " parse recv packet " << data.size);
         uint8_t type = data.convert<uint8_t>(2);
         assert(!waiting_recv_packet);
         if(type == 0) { // data packet
             waiting_recv_packet = waiting_recv_packet_buffer.as_buffer().slice(0, data.size - HEADER_SIZE);
             data.slice(HEADER_SIZE).copy_to(*waiting_recv_packet);
+            DEBUG(*this << " this was a data packet");
             reactor.schedule(on_recv_ready);
         } else if(type == 1) { // ping
             last_pong_request_time = data.convert<uint64_t>(HEADER_SIZE);
             last_pong_request_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
+            DEBUG(*this << " this was a ping");
             reactor.schedule(std::bind(&Link::send_aux, this));
         } else if(type == 2) { // pong
             uint64_t time = data.convert<uint64_t>(HEADER_SIZE);
@@ -214,6 +224,12 @@ namespace Multilink {
             // (schedule the call, so it won't overwrite waiting_recv_packet)
             //LOG("reactor.schedule transport_read_ready");
             reactor.schedule(std::bind(&Link::transport_read_ready, this));
+        }
+
+        if(packet) {
+            DEBUG(*this << " Link::recv " << packet->size);
+        } else {
+            DEBUG(*this << " Link::recv null");
         }
 
         return packet;

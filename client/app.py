@@ -6,6 +6,7 @@ import threading
 import time
 import collections
 import os
+import sys
 
 class Connection(object):
     def __init__(self):
@@ -50,14 +51,23 @@ class LengthPacketStream(object):
         self.f.write(data)
         self.f.flush()
 
-def pipe(a, b):
+def pipe(label, a, b):
+    next_msg = [0]
+    count = [0]
+
     def do():
         while True:
             d = a._sock.recv(4096)
             if not d:
                 break
+
             b.write(d)
             b.flush()
+
+            count[0] += len(d)
+            if time.time() > next_msg[0]:
+                sys.stdout.write('%s receiving (%d bytes)\n' % (label, count[0]))
+                next_msg[0] = time.time() + 0.1
 
     t = threading.Thread(target=do)
     t.daemon = True
@@ -69,8 +79,8 @@ def add_pair(k, delay, buffsize, mbps):
     t0 = Connection().provide_stream(k + 0)
     t1 = Connection().provide_stream(k + 1)
 
-    pipe(t0, t1)
-    pipe(t1, t0)
+    pipe(k, t0, t1)
+    pipe(k + 1, t1, t0)
 
     ctl.limit_stream(k, delay=delay, buffsize=buffsize, mbps=mbps)
 
@@ -84,10 +94,10 @@ ctl.make_multilink(num=0, stream_fd=0)
 ctl.make_multilink(num=1, stream_fd=1)
 
 add_pair(10,
-         delay=0 * 1000, buffsize=1000 * 1000, mbps=40)
+         delay=1 * 1000, buffsize=1 * 1000 * 1000, mbps=40)
 
 add_pair(20,
-         delay=0 * 1000, buffsize=1000 * 1000, mbps=40)
+         delay=1 * 1000, buffsize=1 * 1000 * 1000, mbps=40)
 
 count = 10000
 size = 2048
@@ -95,6 +105,9 @@ size = 2048
 def send_data():
     for i in xrange(count):
         m0.send(struct.pack('I', i) + ' ' * (size - 4))
+        if i % 1000 == 0:
+            print 'sent', i
+
     print 'sent'
 
 t = threading.Thread(target=send_data)

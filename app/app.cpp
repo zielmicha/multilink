@@ -55,9 +55,11 @@ public:
         } else if(type == "limit-stream") {
             int stream_fd = message["stream_fd"].int_value();
             Stream* s = take_fd(stream_fd);
-            s = new DelayedStream(reactor, s,
-                                  message["buffsize"].int_value(),
-                                  message["delay"].int_value());
+            int delay = message["delay"].int_value();
+            if(delay != 0)
+                s = new DelayedStream(reactor, s,
+                                      message["buffsize"].int_value(),
+                                      delay);
             s = new ThrottledStream(reactor, s, message["mbps"].number_value());
             s->set_on_read_ready([](){});
             s->set_on_write_ready([](){});

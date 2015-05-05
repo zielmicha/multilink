@@ -58,6 +58,9 @@ void FreeWriterPacketStream::write_ready() {
         if(wrote == 0) break;
         send_buffer_current = send_buffer_current.slice(wrote);
     }
+
+    if(send_buffer_current.size == 0)
+        on_send_ready();
 }
 
 // ----- LengthPacketStream -----
@@ -79,14 +82,17 @@ std::shared_ptr<LengthPacketStream> LengthPacketStream::create(
 void LengthPacketStream::read_ready() {
     while(true) {
         Buffer data_read = stream->read(recv_buffer.as_buffer().slice(recv_buffer_pos));
-        if(data_read.size == 0) break;
+
         recv_buffer_pos += data_read.size;
         if(recv_buffer_pos >= 4) {
             auto expected_size = recv_buffer.as_buffer().convert<uint32_t>(0);
             if(recv_buffer_pos >= expected_size + 4) {
                 on_recv_ready();
+                break;
             }
         }
+
+        if(data_read.size == 0) break;
     }
 }
 
