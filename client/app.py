@@ -93,19 +93,17 @@ m1 = LengthPacketStream(Connection().provide_stream(1))
 ctl.make_multilink(num=0, stream_fd=0)
 ctl.make_multilink(num=1, stream_fd=1)
 
-add_pair(10,
-         delay=1 * 1000, buffsize=1 * 1000 * 1000, mbps=40)
-
-add_pair(20,
-         delay=1 * 1000, buffsize=1 * 1000 * 1000, mbps=40)
+add_pair(10, delay=1 * 1000, buffsize=20 * 1000 * 1000, mbps=5)
+add_pair(20, delay=1 * 1000, buffsize=1 * 1000 * 1000, mbps=5)
 
 count = 10000
 size = 2048
+K = 1000
 
 def send_data():
     for i in xrange(count):
         m0.send(struct.pack('I', i) + ' ' * (size - 4))
-        if i % 1000 == 0:
+        if i % K == 0:
             print 'sent', i
 
     print 'sent'
@@ -126,7 +124,7 @@ for i in xrange(count):
     ifound, = struct.unpack('I', data[:4])
     ifound_list.append(ifound)
 
-    if i % 1000 == 0:
+    if i % K == 0:
         print 'read', i
 
     t = time.time() - start
@@ -156,3 +154,6 @@ def draw_graph(collected):
 print 'finish'
 
 draw_graph(collected)
+
+bps = count * size / (max(collected.keys()) * timeframe)
+print 'MBps:', bps / 1024.0 / 1024

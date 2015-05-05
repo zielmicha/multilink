@@ -66,7 +66,7 @@ public:
     EPoll(const EPoll& other) = delete;
     ~EPoll();
     bool add(int fd);
-    const EPollIterable& wait();
+    const EPollIterable& wait(int timeout=-1);
 };
 
 #endif

@@ -47,10 +47,10 @@ bool EPoll::add(int fd) {
     return res != -1;
 }
 
-const EPollIterable& EPoll::wait() {
+const EPollIterable& EPoll::wait(int timeout) {
     sigset_t sigset;
     sigemptyset(&sigset);
-    event_count = epoll_pwait(efd, &events[0], events.size(), -1, &sigset);
+    event_count = epoll_pwait(efd, &events[0], events.size(), timeout, &sigset);
     if(event_count < 0) {
         if(errno == EINTR)
             event_count = 0;

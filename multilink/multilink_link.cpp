@@ -76,6 +76,7 @@ namespace Multilink {
     }
 
     bool Link::send(uint64_t seq, Buffer data) {
+        DEBUG(*this << " attempt to send " << data.size);
         if(!send_aux()) {
             assert(seq > last_seq_sent);
             last_seq_sent = seq;

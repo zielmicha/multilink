@@ -76,6 +76,7 @@ void DelayedStream::close() {
 }
 
 size_t DelayedStream::write(Buffer data) {
+    DEBUG("delayed stream write");
     assert(data.size != 0);
     size_t wrote = std::min(data.size, buffsize);
     if(wrote == 0) {

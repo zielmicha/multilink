@@ -90,14 +90,19 @@ void Reactor::schedule(std::function<void()> func) {
 void Reactor::step() {
     epoch ++;
 
-    while(!scheduled_functions.empty()) {
-        decltype(scheduled_functions) scheduled_functions_copy;
-        std::swap(scheduled_functions, scheduled_functions_copy);
-        for(auto& func: scheduled_functions_copy)
-            func();
-    }
+    decltype(scheduled_functions) scheduled_functions_copy;
+    std::swap(scheduled_functions, scheduled_functions_copy);
+    for(auto& func: scheduled_functions_copy)
+        func();
 
-    auto& result = epoll.wait();
+    int timeout;
+
+    if(scheduled_functions.empty())
+        timeout = -1; // block indefinitely
+    else
+        timeout = 0; // don't block
+
+    auto& result = epoll.wait(timeout);
     Signals::call_handlers();
 
     for(EPollResult r: result) {
@@ -115,6 +120,8 @@ void Reactor::step() {
         if(r.error)
             fd.on_error();
     }
+
+    DEBUG("step finished");
 }
 
 void Reactor::run() {
