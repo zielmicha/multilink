@@ -11,7 +11,7 @@ class RPCStream;
 class RPCServer {
 public:
     typedef
-    std::function<void(std::shared_ptr<RPCStream>, Json message)>
+    function<void(std::shared_ptr<RPCStream>, Json message)>
     OnMessageCallback;
 
 private:

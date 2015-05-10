@@ -62,7 +62,7 @@ namespace Multilink {
         void format_send_packet(uint8_t type, Buffer data);
         void raw_send_packet(uint8_t type, Buffer data);
 
-        std::function<void()> on_send_ready_edge_fn;
+        function<void()> on_send_ready_edge_fn;
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();
@@ -79,8 +79,8 @@ namespace Multilink {
         bool send(uint64_t seq, const Buffer data);
         uint64_t get_last_ack_seq() { return last_pong_recv_seq; };
 
-        std::function<void()> on_recv_ready;
-        std::function<void()> on_send_ready;
+        function<void()> on_recv_ready;
+        function<void()> on_send_ready;
 
         friend std::ostream& operator<<(std::ostream& stream, const Link& link) {
             link.display(stream);

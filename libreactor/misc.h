@@ -4,6 +4,11 @@
 #include "reactor.h"
 
 std::vector<FD*> fd_pair(Reactor& reactor);
-inline void nothing() {};
+
+inline void nothing() {}
+
+inline function<void()> get_nothing_function() {
+    return std::bind(nothing);
+}
 
 #endif

@@ -40,7 +40,7 @@ public:
     Popen(Reactor& reactor, std::vector<std::string> arguments);
 
     std::shared_ptr<Process> exec();
-    void call(std::function<void(int)> callback);
+    void call(function<void(int)> callback);
     Future<int> call();
     Future<unit> check_call();
     int call_blocking();
@@ -56,7 +56,7 @@ class Process {
     static bool initialized;
     static std::unordered_map<int, std::shared_ptr<Process> > processes;
 
-    std::vector<std::function<void(int)> > on_finish;
+    std::vector<function<void(int)> > on_finish;
     bool finished = false;
     int exit_code = -1;
 
@@ -67,7 +67,7 @@ public:
 
     Process(const Process& other) = delete;
 
-    void wait(std::function<void(int)> callback);
+    void wait(function<void(int)> callback);
 
     int pid;
     FD* stdin;

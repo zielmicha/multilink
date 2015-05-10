@@ -45,7 +45,7 @@ std::shared_ptr<Process> Popen::exec() {
     return ptr;
 }
 
-void Popen::call(std::function<void(int)> callback) {
+void Popen::call(function<void(int)> callback) {
     exec()->wait(callback);
 }
 
@@ -121,7 +121,7 @@ Process::Process(Popen options) {
     stderr = fds[2];
 }
 
-void Process::wait(std::function<void(int)> callback) {
+void Process::wait(function<void(int)> callback) {
     assert(initialized);
     if(finished)
         callback(exit_code);

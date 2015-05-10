@@ -52,7 +52,7 @@ namespace TCP {
         return completer.future();
     }
 
-    Future<unit> listen(Reactor& reactor, std::string addr, int port, std::function<void(FD*)> accept_cb) {
+    Future<unit> listen(Reactor& reactor, std::string addr, int port, function<void(FD*)> accept_cb) {
         struct sockaddr_in servaddr = {0};
         int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);

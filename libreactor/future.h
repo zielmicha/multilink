@@ -20,8 +20,8 @@ struct _BaseFutureData {
 
     FutureState state;
     std::unique_ptr<std::exception> exception;
-    std::function<void(T)> value_callback;
-    std::function<void(std::unique_ptr<std::exception>)> exception_callback;
+    function<void(T)> value_callback;
+    function<void(std::unique_ptr<std::exception>)> exception_callback;
 };
 
 template <typename T>
@@ -63,8 +63,8 @@ public:
     }
 
     void on_success_or_failure(
-        const std::function<void(T)>& fun_value,
-        const std::function<void(std::unique_ptr<std::exception>)>& fun_exc) const {
+        const function<void(T)>& fun_value,
+        const function<void(std::unique_ptr<std::exception>)>& fun_exc) const {
         switch(data->state) {
         case FutureState::IMMEDIATE_VALUE:
             fun_value(data->get_value());
@@ -79,7 +79,7 @@ public:
         }
     }
 
-    void on_success(const std::function<void(T)>& fun_value) const {
+    void on_success(const function<void(T)>& fun_value) const {
         on_success_or_failure(
             fun_value,
             [](std::unique_ptr<std::exception> ex) {
@@ -88,10 +88,10 @@ public:
     }
 
     template <typename R>
-    Future<R> then(std::function<Future<R>(T)> fun) const;
+    Future<R> then(function<Future<R>(T)> fun) const;
 
     template <typename R>
-    Future<R> then(std::function<R(T)> fun) const;
+    Future<R> then(function<R(T)> fun) const;
 
     bool has_result() const {
         return data->state != FutureState::WAITING;
@@ -165,7 +165,7 @@ public:
         this->data->value_callback(ret);
     }
 
-    std::function<void(T)> result_fn() const {
+    function<void(T)> result_fn() const {
         Completer self = *this;
         return [self](T ret) {
             self.result(ret);
@@ -175,7 +175,7 @@ public:
 
 template <typename T>
 template <typename R>
-Future<R> Future<T>::then(std::function<Future<R>(T)> fun) const {
+Future<R> Future<T>::then(function<Future<R>(T)> fun) const {
     Completer<R> f;
     on_success_or_failure(
         [f, fun](T val) {
@@ -190,7 +190,7 @@ Future<R> Future<T>::then(std::function<Future<R>(T)> fun) const {
 
 template <typename T>
 template <typename R>
-Future<R> Future<T>::then(std::function<R(T)> fun) const {
+Future<R> Future<T>::then(function<R(T)> fun) const {
     Completer<R> f;
     on_success_or_failure(
         [=](T val) {

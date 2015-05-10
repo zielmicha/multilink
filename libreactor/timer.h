@@ -8,9 +8,9 @@ class Timer {
 
     struct Event {
         uint64_t time;
-        std::function<void()> func;
+        function<void()> func;
 
-        Event(uint64_t time, const std::function<void()>& func): time(time), func(func) {};
+        Event(uint64_t time, const function<void()>& func): time(time), func(func) {};
 
         bool operator<(const Event& other) const {
             return time > other.time;
@@ -27,8 +27,8 @@ public:
     Timer(Reactor& r);
     ~Timer();
 
-    void schedule(uint64_t time, const std::function<void()> &func);
-    void once(uint64_t delta, const std::function<void()>& func);
+    void schedule(uint64_t time, const function<void()> &func);
+    void once(uint64_t delta, const function<void()>& func);
     static uint64_t get_time();
 };
 

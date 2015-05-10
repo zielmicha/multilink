@@ -4,7 +4,7 @@
 #include <sys/un.h>
 
 namespace UnixSocket {
-    void listen(Reactor& reactor, std::string path, std::function<void(FD*)> accept_cb) {
+    void listen(Reactor& reactor, std::string path, function<void(FD*)> accept_cb) {
         unlink(path.c_str());
 
         struct sockaddr_un servaddr = {0};

@@ -1,3 +1,5 @@
+add_executable(FunctionTest tests/function_test.cpp)
+
 add_executable(ReactorTest tests/reactor_test.cpp)
 target_link_libraries(ReactorTest reactor)
 

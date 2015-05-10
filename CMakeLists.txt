@@ -3,8 +3,9 @@ project(Link)
 
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_C_COMPILER "/usr/bin/clang")
-#set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field")
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -O3 -fcolor-diagnostics -Wno-unused-private-field")
+set(FLAGS_COMMON "-Wno-unused-private-field -Wno-return-type -Wno-error=unused-value -fcolor-diagnostics") #
+#set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -D_GLIBCXX_DEBUG ${FLAGS_COMMON}")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -O3 ${FLAGS_COMMON}")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt")
 
 include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app)

@@ -39,12 +39,12 @@ Timer::~Timer() {
     fd->close();
 }
 
-void Timer::schedule(uint64_t time, const std::function<void()>& func) {
+void Timer::schedule(uint64_t time, const function<void()>& func) {
     queue.emplace(time, func);
     schedule_front();
 }
 
-void Timer::once(uint64_t delta, const std::function<void()>& func) {
+void Timer::once(uint64_t delta, const function<void()>& func) {
     schedule(get_time() + delta, func);
 }
 

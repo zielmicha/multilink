@@ -19,7 +19,7 @@ public:
     Tun(Reactor& r, std::string name);
     Tun(const Tun& t) = delete;
 
-    std::function<void(Crafter::Packet&)> on_recv;
+    function<void(Crafter::Packet&)> on_recv;
     std::string name;
 };
 

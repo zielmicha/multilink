@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "epoll.h"
 #include "buffer.h"
+#include "function.h"
 
 class Reactor;
 
@@ -18,24 +19,24 @@ public:
     virtual size_t write(const Buffer data) = 0;
     virtual void close() = 0;
 
-    virtual void set_on_read_ready(std::function<void()> f) = 0;
-    virtual void set_on_write_ready(std::function<void()> f) = 0;
-    virtual void set_on_error(std::function<void()> f) = 0;
+    virtual void set_on_read_ready(function<void()> f) = 0;
+    virtual void set_on_write_ready(function<void()> f) = 0;
+    virtual void set_on_error(function<void()> f) = 0;
 };
 
 // There must be a better way...
 #define STREAM_FIELDS                                   \
-    std::function<void()> on_read_ready;                \
-    std::function<void()> on_write_ready;               \
-    std::function<void()> on_error;                     \
+    function<void()> on_read_ready;                \
+    function<void()> on_write_ready;               \
+    function<void()> on_error;                     \
                                                         \
-    void set_on_read_ready(std::function<void()> f) {   \
+    void set_on_read_ready(function<void()> f) {   \
         on_read_ready = f;                              \
     }                                                   \
-    void set_on_write_ready(std::function<void()> f) {  \
+    void set_on_write_ready(function<void()> f) {  \
         on_write_ready = f;                             \
     }                                                   \
-    void set_on_error(std::function<void()> f) {        \
+    void set_on_error(function<void()> f) {        \
         on_error = f;                                   \
     }
 
@@ -69,7 +70,7 @@ private:
 
     EPoll epoll;
     std::unordered_map<int, FD> fds;
-    std::vector<std::function<void()> > scheduled_functions;
+    std::vector<function<void()> > scheduled_functions;
     bool want_exit = false;
     uint64_t epoch = 0;
 public:
@@ -78,7 +79,7 @@ public:
 
     FD& take_fd(int fd);
 
-    void schedule(std::function<void()> func);
+    void schedule(function<void()> func);
 
     void step();
     void exit();

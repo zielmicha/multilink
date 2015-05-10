@@ -1,8 +1,8 @@
+#include "signals.h"
 #include <signal.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <vector>
-#include <functional>
 #include <unordered_map>
 #define LOGGER_NAME "signals"
 #include "logging.h"
@@ -10,7 +10,7 @@
 namespace Signals {
     sigset_t sigset;
     bool signal_appeared[64];
-    std::unordered_map<int, std::function<void()> > signal_handlers;
+    std::unordered_map<int, function<void()> > signal_handlers;
     std::vector<int> signals_registered;
     bool initialized;
 
@@ -24,7 +24,7 @@ namespace Signals {
         signal_appeared[sig] = true;
     }
 
-    void register_signal_handler(int sig, std::function<void()> fun) {
+    void register_signal_handler(int sig, function<void()> fun) {
         init();
 
         signal_appeared[sig] = false;

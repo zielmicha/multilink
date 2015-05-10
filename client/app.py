@@ -93,8 +93,8 @@ m1 = LengthPacketStream(Connection().provide_stream(1))
 ctl.make_multilink(num=0, stream_fd=0)
 ctl.make_multilink(num=1, stream_fd=1)
 
-add_pair(10, delay=1 * 1000, buffsize=2 * 1000 * 1000, mbps=1)
-add_pair(20, delay=100 * 1000, buffsize=2 * 1000 * 1000, mbps=5)
+add_pair(10, delay=1 * 1000, buffsize=2 * 1000 * 1000, mbps=1000000)
+add_pair(20, delay=100 * 1000, buffsize=2 * 1000 * 1000, mbps=5000000)
 
 count = 30000
 size = 2048

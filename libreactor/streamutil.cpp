@@ -22,7 +22,7 @@ Future<unit> write_all(Reactor& reactor, Stream* out, Buffer data) {
     return completer.future();
 }
 
-void read_all(Stream* in, std::function<void(Buffer)> callback) {
+void read_all(Stream* in, function<void(Buffer)> callback) {
     in->set_on_read_ready([callback, in]() {
         while(true) {
             StackBuffer<1024> buff;
