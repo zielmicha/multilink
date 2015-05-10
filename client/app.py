@@ -93,10 +93,10 @@ m1 = LengthPacketStream(Connection().provide_stream(1))
 ctl.make_multilink(num=0, stream_fd=0)
 ctl.make_multilink(num=1, stream_fd=1)
 
-add_pair(10, delay=1 * 1000, buffsize=20 * 1000 * 1000, mbps=5)
-add_pair(20, delay=1 * 1000, buffsize=1 * 1000 * 1000, mbps=5)
+add_pair(10, delay=1 * 1000, buffsize=2 * 1000 * 1000, mbps=1)
+add_pair(20, delay=100 * 1000, buffsize=2 * 1000 * 1000, mbps=5)
 
-count = 10000
+count = 30000
 size = 2048
 K = 1000
 
@@ -156,4 +156,4 @@ print 'finish'
 draw_graph(collected)
 
 bps = count * size / (max(collected.keys()) * timeframe)
-print 'MBps:', bps / 1024.0 / 1024
+print 'MBps:', bps / 1000.0 / 1000

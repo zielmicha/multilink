@@ -3,9 +3,10 @@
 #include <sstream>
 #include <iomanip>
 
-void Buffer::delete_start(size_t end) {
-    assert(size >= end);
-    memmove(data, data + end, size - end);
+void Buffer::delete_start(size_t end, size_t actual_size) {
+    assert(actual_size >= end);
+    assert(size >= actual_size);
+    memmove(data, data + end, actual_size - end);
 }
 
 const Buffer Buffer::from_cstr(const char* s) {

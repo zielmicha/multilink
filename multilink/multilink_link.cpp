@@ -18,6 +18,13 @@ namespace Multilink {
         stream->set_on_read_ready(std::bind(&Link::transport_read_ready, this));
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this, true));
         reactor.schedule(std::bind(&Link::timer_callback, this));
+
+        on_send_ready_edge_fn = [this]() {
+            send_buffer_edge = true;
+
+            if(!this->send_aux())
+                this->on_send_ready();
+        };
     }
 
     void Link::display(std::ostream& out) const {
@@ -45,12 +52,7 @@ namespace Multilink {
                 if(send_buffer_edge) {
                     send_buffer_edge = false;
 
-                    reactor.schedule([this]() {
-                        send_buffer_edge = true;
-
-                        if(!this->send_aux())
-                            this->on_send_ready();
-                    });
+                    reactor.schedule(on_send_ready_edge_fn);
                 }
                 goto finish;
             }
@@ -178,7 +180,8 @@ namespace Multilink {
             if(recv_buffer_pos >= expected_length) {
                 // packet is ready
                 parse_recv_packet(recv_buffer.slice(0, expected_length));
-                recv_buffer.slice(0, recv_buffer_pos).delete_start(expected_length);
+                recv_buffer.slice(0, recv_buffer_pos).delete_start(
+                    expected_length, recv_buffer_pos);
                 recv_buffer_pos -= expected_length;
                 return true;
             }

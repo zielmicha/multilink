@@ -64,6 +64,12 @@ DelayedStream::DelayedStream(Reactor& reactor, Stream* stream,
     stream->set_on_read_ready(std::bind(&DelayedStream::read_ready, this));
     stream->set_on_write_ready(std::bind(&DelayedStream::write_ready, this));
     stream->set_on_error(std::bind(&DelayedStream::error, this));
+
+    after_delay_fn = [this]() {
+        DEBUG("write arrives");
+        waiting ++;
+        write_ready();
+    };
 }
 
 Buffer DelayedStream::read(Buffer data) {
@@ -88,11 +94,7 @@ size_t DelayedStream::write(Buffer data) {
     buffers.emplace_back(wrote);
     data.slice(0, wrote).copy_to(buffers.back().as_buffer());
 
-    timer.once(delay, [this]() {
-        DEBUG("write arrives");
-        waiting ++;
-        write_ready();
-    });
+    timer.once(delay, after_delay_fn);
 
     return wrote;
 }

@@ -104,7 +104,7 @@ optional<Buffer> LengthPacketStream::recv() {
         if(recv_buffer_pos >= expected_size + 4) {
             recv_buffer.as_buffer().slice(4, expected_size).copy_to(
                 recv_caller_buffer.as_buffer());
-            recv_buffer.as_buffer().delete_start(expected_size + 4);
+            recv_buffer.as_buffer().delete_start(expected_size + 4, recv_buffer_pos);
             recv_buffer_pos -= expected_size + 4;
 
             reactor.schedule(std::bind(&LengthPacketStream::read_ready, this));

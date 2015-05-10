@@ -61,6 +61,8 @@ namespace Multilink {
 
         void format_send_packet(uint8_t type, Buffer data);
         void raw_send_packet(uint8_t type, Buffer data);
+
+        std::function<void()> on_send_ready_edge_fn;
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();

@@ -41,6 +41,8 @@ class DelayedStream: public Stream {
     void read_ready();
     void error();
 
+    std::function<void()> after_delay_fn;
+
 public:
     DelayedStream(Reactor& reactor, Stream* stream, uint64_t buffsize, uint64_t delay);
     DelayedStream(const DelayedStream& other) = delete;

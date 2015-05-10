@@ -53,7 +53,10 @@ public:
         memset(data, 0, size);
     }
 
-    void delete_start(size_t end);
+    void delete_start(size_t end, size_t actual_size);
+    void delete_start(size_t end) {
+        delete_start(end, size);
+    }
 
     std::string human_repr() const;
 
