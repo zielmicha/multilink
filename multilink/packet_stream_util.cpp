@@ -34,14 +34,17 @@ FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, Stream* stream)
     reactor(reactor),
     stream(stream),
     send_buffer(MTU),
-    send_buffer_current(NULL, 0) {}
+    send_buffer_current(NULL, 0) {
+    // FIXME: corruption etc
+    write_ready_fn = std::bind(&FreePacketStream::write_ready, this);
+}
 
 bool FreeWriterPacketStream::send(const Buffer data) {
     assert(data.size <= MTU);
     if(send_buffer_current.size == 0) {
         send_buffer_current = send_buffer.as_buffer().slice(0, data.size);
         data.copy_to(send_buffer_current);
-        reactor.schedule(std::bind(&FreePacketStream::write_ready, this));
+        reactor.schedule(write_ready_fn);
         return true;
     } else {
         return false;
@@ -69,7 +72,9 @@ LengthPacketStream::LengthPacketStream(Reactor& reactor, Stream* stream):
     FreeWriterPacketStream(reactor, stream),
     recv_buffer(MTU * 2),
     recv_caller_buffer(MTU),
-    recv_buffer_pos(0) {}
+    recv_buffer_pos(0) {
+    read_ready_fn = std::bind(&LengthPacketStream::read_ready, this);
+}
 
 std::shared_ptr<LengthPacketStream> LengthPacketStream::create(
     Reactor& reactor, Stream* stream) {
@@ -107,7 +112,7 @@ optional<Buffer> LengthPacketStream::recv() {
             recv_buffer.as_buffer().delete_start(expected_size + 4, recv_buffer_pos);
             recv_buffer_pos -= expected_size + 4;
 
-            reactor.schedule(std::bind(&LengthPacketStream::read_ready, this));
+            reactor.schedule(read_ready_fn);
 
             return recv_caller_buffer.as_buffer().slice(0, expected_size);
         }
@@ -139,6 +144,9 @@ Piper::Piper(Reactor& reactor,
                                                  in(in),
                                                  out(out),
                                                  buffer(mtu) {
+    // FIXME: corruption etc
+    send_ready_fn = std::bind(&Piper::send_ready, this);
+    recv_ready_fn = std::bind(&Piper::recv_ready, this);
 }
 
 std::shared_ptr<Piper> Piper::create(Reactor& reactor,
@@ -164,14 +172,14 @@ void Piper::recv_ready() {
     current = buffer.as_buffer().slice(0, data->size);
     data->copy_to(*current);
 
-    reactor.schedule(std::bind(&Piper::send_ready, this));
+    reactor.schedule(send_ready_fn);
 }
 
 void Piper::send_ready() {
     if(current) {
         if(out->send(*current)) {
             current = boost::none;
-            reactor.schedule(std::bind(&Piper::recv_ready, this));
+            reactor.schedule(recv_ready_fn);
         }
     }
 }

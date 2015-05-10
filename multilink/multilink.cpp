@@ -7,7 +7,7 @@ const int QUEUE_SIZE = 100000;
 namespace Multilink {
     Multilink::Multilink(Reactor& reactor): reactor(reactor),
                                             queue(QUEUE_SIZE) {
-
+        some_link_send_ready_fn = std::bind(&Multilink::some_link_send_ready, this);
     }
 
     void Multilink::shuffle_links() {
@@ -19,7 +19,7 @@ namespace Multilink {
         bool was_empty = queue.empty();
         bool pushed = queue.push_back(data);
         if(was_empty) {
-            reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
+            reactor.schedule(some_link_send_ready_fn);
         }
         return pushed;
     }

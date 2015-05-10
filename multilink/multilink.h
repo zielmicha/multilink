@@ -23,6 +23,8 @@ namespace Multilink {
 
         void shuffle_links();
 
+        function<void()> some_link_send_ready_fn;
+
     public:
         Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;

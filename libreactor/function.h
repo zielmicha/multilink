@@ -45,6 +45,12 @@ namespace StackFunction {
     struct PerformCall<F, R, Arg1, Arg2> : IsConvertible<
         decltype((std::declval<F>())(std::declval<Arg1>(), std::declval<Arg2>())), R> {};
 
+    inline void count_() {
+        static int counter = 0;
+        counter ++;
+        if(counter > 1000) abort();
+    }
+
 template<typename R, typename... Args>
 struct Function<R(Args...)>
 {
@@ -76,7 +82,11 @@ private:
     template<typename F>
     struct Impl : ImplBase {
         template<typename FArg>
-        Impl(FArg&& f) : f(std::forward<FArg>(f)) {  }
+        Impl(FArg&& f) : f(std::forward<FArg>(f)) {
+            #ifdef CHECK_FUNC_ALLOC
+            count_();
+            #endif
+        }
 
         ~Impl() {}
 

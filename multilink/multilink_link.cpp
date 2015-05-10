@@ -19,6 +19,9 @@ namespace Multilink {
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this, true));
         reactor.schedule(std::bind(&Link::timer_callback, this));
 
+        transport_write_ready_fn = std::bind(&Link::transport_write_ready, this, false);
+        transport_read_ready_fn = std::bind(&Link::transport_read_ready, this);
+
         on_send_ready_edge_fn = [this]() {
             send_buffer_edge = true;
 
@@ -135,7 +138,7 @@ namespace Multilink {
 
     void Link::raw_send_packet(uint8_t type, Buffer data) {
         format_send_packet(type, data);
-        reactor.schedule(std::bind(&Link::transport_write_ready, this, false));
+        reactor.schedule(transport_write_ready_fn);
     }
 
     void Link::format_send_packet(uint8_t type, Buffer data) {
@@ -227,7 +230,7 @@ namespace Multilink {
             // (After congestion on recv/on_recv_ready side there may be waiting data in stream)
             // (schedule the call, so it won't overwrite waiting_recv_packet)
             //LOG("reactor.schedule transport_read_ready");
-            reactor.schedule(std::bind(&Link::transport_read_ready, this));
+            reactor.schedule(transport_read_ready_fn);
         }
 
         if(packet) {

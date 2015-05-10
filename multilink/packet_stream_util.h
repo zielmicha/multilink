@@ -13,6 +13,8 @@ protected:
 
     void write_ready();
 
+    function<void()> write_ready_fn;
+
     FreeWriterPacketStream(Reactor& reactor, Stream* stream);
 public:
     FreeWriterPacketStream(const FreeWriterPacketStream&) = delete;
@@ -43,6 +45,8 @@ class LengthPacketStream: public FreeWriterPacketStream {
     int recv_buffer_pos;
     void read_ready();
 
+    function<void()> read_ready_fn;
+
     LengthPacketStream(Reactor& reactor, Stream* stream);
 public:
     LengthPacketStream(const LengthPacketStream&) = delete;
@@ -64,6 +68,9 @@ class Piper {
 
     AllocBuffer buffer;
     optional<Buffer> current;
+
+    function<void()> send_ready_fn;
+    function<void()> recv_ready_fn;
 
     Piper(Reactor& reactor,
           std::shared_ptr<PacketStream> in,

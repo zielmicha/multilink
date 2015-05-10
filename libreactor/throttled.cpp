@@ -13,6 +13,7 @@ ThrottledStream::ThrottledStream(Reactor& reactor, Stream* stream, double mbps)
     stream->set_on_read_ready(std::bind(&ThrottledStream::read_ready, this));
     stream->set_on_write_ready(std::bind(&ThrottledStream::write_ready, this));
     stream->set_on_error(std::bind(&ThrottledStream::error, this));
+    write_ready_fn = std::bind(&ThrottledStream::write_ready, this);
 }
 
 Buffer ThrottledStream::read(Buffer data) {
@@ -30,7 +31,7 @@ size_t ThrottledStream::write(const Buffer data) {
         uint64_t elapse_time = wrote / mbps;
 
         next_transmission = Timer::get_time() + elapse_time;
-        timer.schedule(next_transmission, std::bind(&ThrottledStream::write_ready, this));
+        timer.schedule(next_transmission, write_ready_fn);
         return wrote;
     }
     return 0;

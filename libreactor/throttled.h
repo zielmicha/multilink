@@ -15,6 +15,7 @@ class ThrottledStream: public Stream {
     void error();
     bool can_transmit();
 
+    function<void()> write_ready_fn;
 public:
     ThrottledStream(Reactor& reactor, Stream* stream, double mbps);
     ThrottledStream(const ThrottledStream& other) = delete;

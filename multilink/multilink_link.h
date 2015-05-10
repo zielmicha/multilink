@@ -63,6 +63,8 @@ namespace Multilink {
         void raw_send_packet(uint8_t type, Buffer data);
 
         function<void()> on_send_ready_edge_fn;
+        function<void()> transport_write_ready_fn;
+        function<void()> transport_read_ready_fn;
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();
