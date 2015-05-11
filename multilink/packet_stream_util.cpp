@@ -2,15 +2,16 @@
 #define LOGGER_NAME "packetstreamutil"
 #include "logging.h"
 
-const int MTU = 4096;
+const int MTU = 8192;
 
-FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream):
+FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream, size_t mtu):
     FreeWriterPacketStream(reactor, stream),
-    recv_buffer(MTU) {
+    recv_buffer(mtu) {
 }
 
-std::shared_ptr<FreePacketStream> FreePacketStream::create(Reactor& reactor, Stream* stream) {
-    std::shared_ptr<FreePacketStream> self {new FreePacketStream(reactor, stream)};
+std::shared_ptr<FreePacketStream> FreePacketStream::create(
+    Reactor& reactor, Stream* stream, size_t mtu) {
+    std::shared_ptr<FreePacketStream> self {new FreePacketStream(reactor, stream, mtu)};
     stream->set_on_write_ready(std::bind(&FreePacketStream::write_ready, self));
     stream->set_on_read_ready(std::bind(&FreePacketStream::read_ready, self));
     return self;

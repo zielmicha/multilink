@@ -27,11 +27,12 @@ class FreePacketStream: public FreeWriterPacketStream {
 
     void read_ready();
 
-    FreePacketStream(Reactor& reactor, Stream* stream);
+    FreePacketStream(Reactor& reactor, Stream* stream, size_t mtu);
 public:
     FreePacketStream(const FreePacketStream&) = delete;
 
-    static std::shared_ptr<FreePacketStream> create(Reactor& reactor, Stream* stream);
+    static std::shared_ptr<FreePacketStream> create(Reactor& reactor, Stream* stream,
+                                                    size_t mtu = 8192);
 
     optional<Buffer> recv();
     void close() { stream->close(); }
@@ -78,7 +79,7 @@ public:
 
 void pipe(Reactor& reactor,
           std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
-          size_t mtu=4096);
+          size_t mtu=8192);
 void pipe(Reactor& reactor,
           std::shared_ptr<Stream> in, std::shared_ptr<Stream> out);
 

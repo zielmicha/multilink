@@ -1,77 +1,11 @@
 # coding=utf-8
-import socket
 import struct
-import json
 import threading
 import time
 import collections
 import os
-import sys
 
-class Connection(object):
-    def __init__(self):
-        self.sock = socket.socket(socket.AF_UNIX)
-        self.sock.connect('build/app.sock')
-        self.file = self.sock.makefile('r+')
-
-    def send(self, msg):
-        msg = json.dumps(msg)
-        self.sock.sendall(struct.pack('I', len(msg)) + msg)
-
-    def provide_stream(self, num):
-        self.send({'type': 'provide-stream', 'num': num})
-        resp = self.file.read(3)
-        if resp != 'ok\n':
-            raise IOError('bad response to provide-stream')
-        return self.file
-
-    def make_multilink(self, num, stream_fd):
-        self.send({'type': 'multilink',
-                   'num': num, 'stream_fd': stream_fd})
-
-    def add_link(self, num, stream_fd, name):
-        self.send({'type': 'add-link', 'name': name,
-                   'num': num, 'stream_fd': stream_fd})
-
-    def limit_stream(self, stream_fd, buffsize, delay, mbps):
-        self.send({'type': 'limit-stream', 'stream_fd': stream_fd,
-                   'buffsize': buffsize, 'mbps': mbps,
-                   'delay': delay})
-
-class LengthPacketStream(object):
-    def __init__(self, f):
-        self.f = f
-
-    def recv(self):
-        length, = struct.unpack('I', self.f.read(4))
-        return self.f.read(length)
-
-    def send(self, data):
-        self.f.write(struct.pack('I', len(data)))
-        self.f.write(data)
-        self.f.flush()
-
-def pipe(label, a, b):
-    next_msg = [0]
-    count = [0]
-
-    def do():
-        while True:
-            d = a._sock.recv(4096)
-            if not d:
-                break
-
-            b.write(d)
-            b.flush()
-
-            count[0] += len(d)
-            if time.time() > next_msg[0]:
-                sys.stdout.write('%s receiving (%d bytes)\n' % (label, count[0]))
-                next_msg[0] = time.time() + 0.1
-
-    t = threading.Thread(target=do)
-    t.daemon = True
-    t.start()
+from app_client import Connection, LengthPacketStream, pipe
 
 ctl = Connection()
 
@@ -93,7 +27,7 @@ m1 = LengthPacketStream(Connection().provide_stream(1))
 ctl.make_multilink(num=0, stream_fd=0)
 ctl.make_multilink(num=1, stream_fd=1)
 
-add_pair(10, delay=1 * 1000, buffsize=2 * 1000 * 1000, mbps=1)
+add_pair(10, delay=1 * 1000, buffsize=2 * 1000 * 1000, mbps=3)
 add_pair(20, delay=100 * 1000, buffsize=2 * 1000 * 1000, mbps=5)
 
 count = 30000

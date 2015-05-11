@@ -45,9 +45,15 @@ public:
             int num = message["num"].int_value();
             int stream_fd = message["stream_fd"].int_value();
             multilinks[num] = std::make_shared<Multilink::Multilink>(reactor);
-            auto target = LengthPacketStream::create(reactor, take_fd(stream_fd));
-            pipe(reactor, multilinks[num], target, Multilink::MULTILINK_MTU);
-            pipe(reactor, target, multilinks[num], Multilink::MULTILINK_MTU);
+            std::shared_ptr<PacketStream> target;
+            if(!message["free"].bool_value()) {
+                target = LengthPacketStream::create(reactor, take_fd(stream_fd));
+            } else {
+                target = FreePacketStream::create(reactor, take_fd(stream_fd),
+                                                  Multilink::MULTILINK_MTU);
+            }
+            pipe(reactor, multilinks[num], target);
+            pipe(reactor, target, multilinks[num]);
         } else if(type == "add-link") {
             int num = message["num"].int_value();
             int stream_fd = message["stream_fd"].int_value();

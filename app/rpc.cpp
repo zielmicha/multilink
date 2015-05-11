@@ -28,7 +28,6 @@ void RPCServer::accept(FD* fd) {
 void RPCServer::read_message(std::shared_ptr<RPCStream> stream) {
     ioutil::read(stream->fd, 4).then<ByteString>([=](ByteString data) {
         uint32_t length = data.as_buffer().convert<uint32_t>(0);
-        std::cerr << "read " << length << std::endl;
         return ioutil::read(stream->fd, length);
     }).then<unit>([=](ByteString data) {
         std::string error;
