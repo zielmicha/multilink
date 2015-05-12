@@ -59,10 +59,11 @@ class Handler(app_client.HandlerBase):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('sock')
+    parser.add_argument('connect_addr')
     parser.add_argument('connect_port', type=int)
     parser.add_argument('listen_port', type=int)
     args = parser.parse_args()
 
     Handler(args.sock,
-            ('localhost', args.connect_port),
+            (args.connect_addr, args.connect_port),
             ('localhost', args.listen_port)).run()
