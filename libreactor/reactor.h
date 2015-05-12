@@ -21,6 +21,9 @@ public:
     virtual void set_on_read_ready(std::function<void()> f) = 0;
     virtual void set_on_write_ready(std::function<void()> f) = 0;
     virtual void set_on_error(std::function<void()> f) = 0;
+
+    void set_on_read_ready_and_schedule(Reactor& r, std::function<void()> f);
+    void set_on_write_ready_and_schedule(Reactor& r, std::function<void()> f);
 };
 
 // There must be a better way...

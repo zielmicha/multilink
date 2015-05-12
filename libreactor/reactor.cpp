@@ -14,6 +14,16 @@ const uint64_t MAX_EPOCH_WRITE = 40960;
 const uint64_t EPOCH_INF = 1ull << 63;
 #endif
 
+void Stream::set_on_read_ready_and_schedule(Reactor& r, std::function<void()> f) {
+    set_on_read_ready(f);
+    r.schedule(f);
+}
+
+void Stream::set_on_write_ready_and_schedule(Reactor& r, std::function<void()> f) {
+    set_on_write_ready(f);
+    r.schedule(f);
+}
+
 size_t FD::write(const Buffer data) {
     assert(data.size != 0);
     int ret = ::write(fd, data.data, data.size);

@@ -12,8 +12,8 @@ FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream, size_t mtu)
 std::shared_ptr<FreePacketStream> FreePacketStream::create(
     Reactor& reactor, Stream* stream, size_t mtu) {
     std::shared_ptr<FreePacketStream> self {new FreePacketStream(reactor, stream, mtu)};
-    stream->set_on_write_ready(std::bind(&FreePacketStream::write_ready, self));
-    stream->set_on_read_ready(std::bind(&FreePacketStream::read_ready, self));
+    stream->set_on_write_ready_and_schedule(reactor, std::bind(&FreePacketStream::write_ready, self));
+    stream->set_on_read_ready_and_schedule(reactor, std::bind(&FreePacketStream::read_ready, self));
     return self;
 }
 
@@ -75,8 +75,10 @@ LengthPacketStream::LengthPacketStream(Reactor& reactor, Stream* stream):
 std::shared_ptr<LengthPacketStream> LengthPacketStream::create(
     Reactor& reactor, Stream* stream) {
     std::shared_ptr<LengthPacketStream> self {new LengthPacketStream(reactor, stream)};
-    stream->set_on_write_ready(std::bind(&LengthPacketStream::write_ready, self));
-    stream->set_on_read_ready(std::bind(&LengthPacketStream::read_ready, self));
+    stream->set_on_write_ready_and_schedule(
+        reactor, std::bind(&LengthPacketStream::write_ready, self));
+    stream->set_on_read_ready_and_schedule(
+        reactor, std::bind(&LengthPacketStream::read_ready, self));
     return self;
 }
 

@@ -18,6 +18,7 @@ namespace Multilink {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
         bool pushed = queue.push_back(data);
+        LOG("packet queued " << pushed);
         if(was_empty) {
             reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
         }
@@ -44,6 +45,7 @@ namespace Multilink {
         link->name = name;
 
         reactor.schedule(std::bind(&Multilink::link_send_ready, this, link));
+        reactor.schedule(std::bind(&Multilink::link_recv_ready, this, link));
 
         return *link;
     }
@@ -69,7 +71,8 @@ namespace Multilink {
 
     void Multilink::some_link_send_ready() {
         shuffle_links();
-        for(auto& link: links)
+        for(auto& link: links) {
             link_send_ready(&*link);
+        }
     }
 }
