@@ -9,7 +9,7 @@
 #include "packet_stream.h"
 
 namespace Multilink {
-    const size_t LINK_MTU = 4096;
+    const size_t LINK_MTU = 16384;
     const size_t HEADER_SIZE = 3;
     const size_t MULTILINK_MTU = LINK_MTU - HEADER_SIZE;
 

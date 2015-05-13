@@ -2,7 +2,7 @@
 #define LOGGER_NAME "packetstreamutil"
 #include "logging.h"
 
-const int MTU = 8192;
+const int MTU = 16384;
 
 FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream, size_t mtu):
     FreeWriterPacketStream(reactor, stream),

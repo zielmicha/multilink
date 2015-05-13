@@ -1,3 +1,3 @@
 app: cd ../build && ninja app && ./app
 server: sleep 2.5; python -u server.py ../build/app.sock 9999 7000
-client: sleep 3.5; python -u client.py ../build/app.sock 7000 9998
+client: sleep 3.5; python -u client.py ../build/app.sock localhost 7000 9998

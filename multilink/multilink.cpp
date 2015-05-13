@@ -18,7 +18,6 @@ namespace Multilink {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
         bool pushed = queue.push_back(data);
-        LOG("packet queued " << pushed);
         if(was_empty) {
             reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
         }
