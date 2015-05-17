@@ -35,8 +35,9 @@ class Handler(app_client.HandlerBase):
     def handle_child(self, sock, addr):
         f = sock.makefile('r+', 1)
         id_length, = struct.unpack('!I', f.read(4))
-        assert id_length < 4096
+        assert id_length < 4096, 'bad id_length: %s' % id_length
         id = f.read(id_length)
+        print 'starting child:', id
 
         with self.lock:
             if id not in self.multilinks:

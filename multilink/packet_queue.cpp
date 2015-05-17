@@ -2,10 +2,7 @@
 #define LOGGER_NAME "packetqueue"
 #include "logging.h"
 
-PacketQueue::PacketQueue(size_t max_size): max_size(max_size),
-                                           buffer(max_size)
-{
-
+PacketQueue::PacketQueue(size_t max_size): buffer(max_size), max_size(max_size) {
 }
 
 void PacketQueue::pop_front() {

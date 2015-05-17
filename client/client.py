@@ -6,10 +6,10 @@ import os
 import threading
 
 class Handler(app_client.HandlerBase):
-    def __init__(self, sock_path, connect_addr, listen_addr):
+    def __init__(self, sock_path, connect_addrs, listen_addr):
         self.sock_path = sock_path
         self.ctl = app_client.Connection(self.sock_path)
-        self.connect_addr = connect_addr
+        self.connect_addrs = connect_addrs
         self.listen_addr = listen_addr
         self.lock = threading.Lock()
         self.multilink_counter = 0
@@ -17,22 +17,27 @@ class Handler(app_client.HandlerBase):
 
     def create_connection(self, ident, bind, addr):
         s = socket.socket()
-        s.bind((bind, 0))
+        s.bind(bind)
         s.connect(addr)
 
         f = s.makefile('r+', 1)
         f.write(struct.pack('!I', len(ident)) + ident)
+        f.flush()
         return f
 
-    def handle_child(self, child, addr):
-        print 'handle connection'
+    def handle_child(self, child, child_addr):
         ident = os.urandom(16).encode('hex')
-        conn = self.create_connection(ident, '0.0.0.0', self.connect_addr)
-        conn_fd = self.provide_stream(conn, 'client conn')
+        print 'handle connection', ident
 
-        with self.lock:
-            m_id = self.make_multilink(child.makefile('r+'))
-            self.ctl.add_link(m_id, conn_fd, 'client')
+        m_id = self.make_multilink(child.makefile('r+'))
+
+        for bind, addr in self.connect_addrs:
+            conn = self.create_connection(ident, bind, addr)
+            name = 'client@%s' % bind[0]
+            conn_fd = self.provide_stream(conn, name)
+
+            with self.lock:
+                self.ctl.add_link(m_id, conn_fd, name)
 
     def run(self):
         server = socket.socket()
@@ -59,11 +64,16 @@ class Handler(app_client.HandlerBase):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('sock')
-    parser.add_argument('connect_addr')
-    parser.add_argument('connect_port', type=int)
     parser.add_argument('listen_port', type=int)
+    parser.add_argument('connect_addrs', nargs='+')
     args = parser.parse_args()
 
-    Handler(args.sock,
-            (args.connect_addr, args.connect_port),
+    def parse_addr(s):
+        bind, addr, port = s.split(':')
+        return ((bind, 0), (addr, int(port)))
+
+    connect_addrs = [
+        parse_addr(addr) for addr in args.connect_addrs ]
+
+    Handler(args.sock, connect_addrs,
             ('localhost', args.listen_port)).run()

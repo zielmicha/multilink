@@ -2,9 +2,9 @@
 #define LOGGER_NAME "multilink"
 #include "logging.h"
 
-const int QUEUE_SIZE = 100000;
-
 namespace Multilink {
+    const int QUEUE_SIZE = MULTILINK_MTU * 100;
+
     Multilink::Multilink(Reactor& reactor): reactor(reactor),
                                             queue(QUEUE_SIZE) {
 
@@ -55,10 +55,14 @@ namespace Multilink {
 
     void Multilink::link_send_ready(Link* link) {
         while(true) {
-            if(queue.empty()) {
+            if(queue.packet_count() * MULTILINK_MTU < queue.max_size / 2) {
+                // queue not too full
                 on_send_ready();
             }
-            if(queue.empty()) break;
+            if(queue.empty()) {
+                LOG("multilink queue empty");
+                break;
+            }
 
             if(link->send(++last_seq, queue.front())) {
                 queue.pop_front();
