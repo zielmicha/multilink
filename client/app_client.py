@@ -4,6 +4,7 @@ import json
 import threading
 import time
 import sys
+import passfd
 
 class Connection(object):
     def __init__(self, path='../build/app.sock'):
@@ -21,6 +22,14 @@ class Connection(object):
         if resp != 'ok\n':
             raise IOError('bad response to provide-stream')
         return self.file
+
+    def pass_stream(self, num, fd):
+        self.send({'type': 'pass-stream', 'num': num})
+        passfd.sendfd(self.sock, fd)
+
+        resp = self.file.read(3)
+        if resp != 'ok\n':
+            raise IOError('bad response to pass-stream')
 
     def make_multilink(self, num, stream_fd, free=False):
         self.send({'type': 'multilink',
@@ -78,10 +87,7 @@ def pipe2(label, a, b):
 class HandlerBase(object):
     def provide_stream(self, stream, name='provide'):
         id = self.stream_counter
-        stream1 = Connection(self.sock_path).provide_stream(id)
-
+        conn = Connection(self.sock_path)
+        conn.pass_stream(id, stream.fileno())
         self.stream_counter += 1
-
-        pipe2(name, stream, stream1)
-
         return id

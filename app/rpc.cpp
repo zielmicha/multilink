@@ -19,7 +19,7 @@ std::shared_ptr<RPCServer> RPCServer::create(
 }
 
 void RPCServer::accept(FD* fd) {
-    std::shared_ptr<RPCStream> stream = std::make_shared<RPCStream>();
+    std::shared_ptr<RPCStream> stream {new RPCStream(reactor)};
     std::cerr << "accepted unix connection fd=" << fd->fileno() << std::endl;
     stream->fd = fd;
     read_message(stream);
@@ -44,4 +44,11 @@ void RPCServer::read_message(std::shared_ptr<RPCStream> stream) {
 void RPCStream::write(Json data) {
     assert(!abandoned);
     assert(false); // TODO
+}
+
+Future<int> RPCStream::recv_fd() {
+    abandoned = true;
+    return UnixSocket::recv_fd(reactor, fd).then<int>([=](int fd) -> int {
+        return fd;
+    });
 }

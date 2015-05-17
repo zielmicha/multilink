@@ -41,6 +41,13 @@ public:
             FD* fd = stream->abandon();
             unused_stream_fds[num] = fd;
             ioutil::write(fd, ByteString::copy_from("ok\n"));
+        } else if(type == "pass-stream") {
+            int num = message["num"].int_value();
+            stream->recv_fd().then<unit>([=](int fd) -> unit {
+                unused_stream_fds[num] = &reactor.take_fd(fd);
+                ioutil::write(stream->abandon(), ByteString::copy_from("ok\n"));
+                return {};
+            });
         } else if(type == "multilink") {
             int num = message["num"].int_value();
             int stream_fd = message["stream_fd"].int_value();

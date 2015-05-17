@@ -3,6 +3,7 @@
 #include "reactor.h"
 #include <memory>
 #include "json11.hpp"
+#include "future.h"
 
 using json11::Json;
 
@@ -33,7 +34,11 @@ public:
 
 class RPCStream {
     FD* fd;
+    Reactor& reactor;
     bool abandoned = false;
+
+    RPCStream(Reactor& reactor):
+        reactor(reactor) {}
 
     friend class RPCServer;
 public:
@@ -42,6 +47,7 @@ public:
         return fd;
     }
 
+    Future<int> recv_fd();
     void write(Json data);
 };
 
