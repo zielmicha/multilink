@@ -3,7 +3,7 @@
 #include "packet_stream.h"
 #include "reactor.h"
 
-class FreeWriterPacketStream: public PacketStream {
+class FreeWriterPacketStream: public AbstractPacketStream {
 protected:
     Reactor& reactor;
     Stream* stream;
@@ -17,9 +17,8 @@ protected:
 public:
     FreeWriterPacketStream(const FreeWriterPacketStream&) = delete;
 
-    bool send(const Buffer data);
-
-    PACKET_STREAM_FIELDS
+    bool send_with_offset(const Buffer data);
+    size_t get_send_offset() { return 0; }
 };
 
 class FreePacketStream: public FreeWriterPacketStream {

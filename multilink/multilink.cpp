@@ -14,7 +14,7 @@ namespace Multilink {
         random_shuffle(links.begin(), links.end());
     }
 
-    bool Multilink::send(const Buffer data) {
+    bool Multilink::send_with_offset(const Buffer data) {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
         bool pushed = queue.push_back(data);

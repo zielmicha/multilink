@@ -3,7 +3,7 @@
 #include "packet_stream.h"
 #include <unordered_map>
 
-class ReorderStream: public PacketStream {
+class ReorderStream: public AbstractPacketStream {
     PacketStream* stream;
 
     void transport_recv_ready();
@@ -20,12 +20,10 @@ public:
     ReorderStream(PacketStream* stream);
 
     optional<Buffer> recv();
-    bool send(Buffer data);
-    bool send_offset_8(Buffer data);
+    bool send_with_offset(Buffer data);
+    size_t get_send_offset() { return 8; }
 
     void close() { stream->close(); }
-
-    PACKET_STREAM_FIELDS
 };
 
 #endif

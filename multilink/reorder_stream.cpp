@@ -7,14 +7,7 @@ ReorderStream::ReorderStream(PacketStream* stream): stream(stream) {
     stream->set_on_send_ready(std::bind(&ReorderStream::transport_send_ready, this));
 }
 
-bool ReorderStream::send(Buffer data) {
-    const int offset = 8;
-    AllocBuffer buff(data.size + offset);
-    data.copy_to(buff.as_buffer().slice(offset));
-    return send_offset_8(buff.as_buffer());
-}
-
-bool ReorderStream::send_offset_8(Buffer data) {
+bool ReorderStream::send_with_offset(Buffer data) {
     data.convert<uint64_t>(0) = (next_send_seq);
     if(stream->send(data)) {
         next_send_seq ++;

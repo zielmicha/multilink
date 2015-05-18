@@ -37,7 +37,7 @@ FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, Stream* stream)
     send_buffer(MTU),
     send_buffer_current(NULL, 0) {}
 
-bool FreeWriterPacketStream::send(const Buffer data) {
+bool FreeWriterPacketStream::send_with_offset(const Buffer data) {
     assert(data.size <= MTU);
     if(send_buffer_current.size == 0) {
         send_buffer_current = send_buffer.as_buffer().slice(0, data.size);
