@@ -6,7 +6,7 @@ namespace Multilink {
     const int QUEUE_SIZE = MULTILINK_MTU * 100;
 
     Multilink::Multilink(Reactor& reactor): reactor(reactor),
-                                            queue(QUEUE_SIZE) {
+                                            queue(QUEUE_SIZE, MULTILINK_MTU) {
 
     }
 
@@ -14,14 +14,18 @@ namespace Multilink {
         random_shuffle(links.begin(), links.end());
     }
 
-    bool Multilink::send_with_offset(const Buffer data) {
+    void Multilink::send_with_offset(const Buffer data) {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
         bool pushed = queue.push_back(data);
+        assert(pushed);
         if(was_empty) {
             reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
         }
-        return pushed;
+    }
+
+    bool Multilink::is_send_ready() {
+        return !queue.is_full();
     }
 
     optional<Buffer> Multilink::recv() {
@@ -55,7 +59,7 @@ namespace Multilink {
 
     void Multilink::link_send_ready(Link* link) {
         while(true) {
-            if(queue.packet_count() * MULTILINK_MTU < queue.max_size / 2) {
+            if(queue.packet_count() < queue.max_count) {
                 // queue not too full
                 on_send_ready();
             }

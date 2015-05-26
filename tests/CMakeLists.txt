@@ -34,11 +34,6 @@ add_executable(DelayedTest
   tests/delayed_test.cpp)
 target_link_libraries(DelayedTest reactor)
 
-add_executable(PacketQueueTest
-  tests/packet_queue_test.cpp
-  multilink/packet_queue.cpp)
-target_link_libraries(PacketQueueTest reactor)
-
 add_executable(MultiLinkTest
   tests/multilink_test.cpp)
 target_link_libraries(MultiLinkTest multilink reactor)

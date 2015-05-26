@@ -4,22 +4,20 @@
 #include "buffer.h"
 
 class PacketQueue {
-    AllocBuffer buffer;
-    size_t start = 0;
-    size_t end = 0;
-
-    std::deque<std::pair<size_t, size_t> > queue;
+    std::deque<AllocBuffer> queue;
+    const size_t mtu;
 
 public:
-    PacketQueue(size_t max_size);
+    const size_t max_count;
+
+    PacketQueue(size_t max_size, size_t mtu);
     Buffer front();
     void pop_front();
     int packet_count() { return queue.size(); }
 
-    const uint64_t max_size;
-
     bool push_back(const Buffer data);
     bool empty() { return queue.empty();  }
+    bool is_full();
 };
 
 #endif

@@ -30,7 +30,7 @@ int main() {
 
     pstream->set_on_send_ready([](){});
 
-    assert(pstream->send(Buffer::from_cstr("foobar")));
+    pstream->send(Buffer::from_cstr("foobar"));
     assert(fds[0]->write(Buffer::from_cstr("foobar")) == 6);
 
     reactor.run();

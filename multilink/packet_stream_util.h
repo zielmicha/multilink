@@ -17,7 +17,8 @@ protected:
 public:
     FreeWriterPacketStream(const FreeWriterPacketStream&) = delete;
 
-    bool send_with_offset(const Buffer data);
+    void send_with_offset(const Buffer data);
+    bool is_send_ready();
     size_t get_send_offset() { return 0; }
 };
 
@@ -49,7 +50,7 @@ public:
 
     static std::shared_ptr<LengthPacketStream> create(Reactor& reactor, Stream* stream);
 
-    bool send(const Buffer data);
+    void send(const Buffer data);
     optional<Buffer> recv();
     void close() { stream->close(); }
 };

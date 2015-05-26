@@ -37,16 +37,17 @@ FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, Stream* stream)
     send_buffer(MTU),
     send_buffer_current(NULL, 0) {}
 
-bool FreeWriterPacketStream::send_with_offset(const Buffer data) {
+void FreeWriterPacketStream::send_with_offset(const Buffer data) {
     assert(data.size <= MTU);
-    if(send_buffer_current.size == 0) {
-        send_buffer_current = send_buffer.as_buffer().slice(0, data.size);
-        data.copy_to(send_buffer_current);
-        reactor.schedule(std::bind(&FreePacketStream::write_ready, this));
-        return true;
-    } else {
-        return false;
-    }
+    assert(is_send_ready());
+
+    send_buffer_current = send_buffer.as_buffer().slice(0, data.size);
+    data.copy_to(send_buffer_current);
+    reactor.schedule(std::bind(&FreePacketStream::write_ready, this));
+}
+
+bool FreeWriterPacketStream::is_send_ready() {
+    return send_buffer_current.size == 0;
 }
 
 void FreeWriterPacketStream::write_ready() {
@@ -118,13 +119,13 @@ optional<Buffer> LengthPacketStream::recv() {
     return boost::none;
 }
 
-bool LengthPacketStream::send(const Buffer data) {
-    // FIXME: not optimal...
+void LengthPacketStream::send(const Buffer data) {
+    // TODO: use send_with_offset
     AllocBuffer new_buffer { data.size + 4 };
     data.copy_to(new_buffer.as_buffer().slice(4));
     new_buffer.as_buffer().convert<uint32_t>(0) = data.size;
 
-    return this->FreeWriterPacketStream::send(new_buffer.as_buffer());
+    this->FreeWriterPacketStream::send(new_buffer.as_buffer());
 }
 
 // ----- Piping -----
@@ -172,7 +173,8 @@ void Piper::recv_ready() {
 
 void Piper::send_ready() {
     if(current) {
-        if(out->send(*current)) {
+        if(out->is_send_ready()) {
+            out->send(*current);
             current = boost::none;
             reactor.schedule(std::bind(&Piper::recv_ready, this));
         }

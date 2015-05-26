@@ -1,8 +1,10 @@
 #include "write_queue.h"
 #include "logging.h"
 
+const int MTU = 4096; // TODO
+
 WriteQueue::WriteQueue(Reactor& reactor, std::shared_ptr<PacketStream> output, size_t max_size) :
-    output(output), queue(max_size) {
+    output(output), queue(max_size, MTU) {
 }
 
 std::shared_ptr<WriteQueue> WriteQueue::create(Reactor& reactor, std::shared_ptr<PacketStream> output, size_t max_size) {
@@ -19,8 +21,10 @@ bool WriteQueue::send(const Buffer data) {
 }
 
 void WriteQueue::on_send_ready() {
-    while(!queue.empty() && output->send(queue.front()))
+    while(!queue.empty() && output->is_send_ready()) {
+        send(queue.front());
         queue.pop_front();
+    }
 }
 
 void write_null_packets(PacketStream* output, size_t packet_size) {
@@ -28,6 +32,6 @@ void write_null_packets(PacketStream* output, size_t packet_size) {
         AllocBuffer buffer {packet_size};
         buffer.as_buffer().set_zero();
 
-        while(output->send(buffer.as_buffer())) ;
+        while(output->is_send_ready()) output->send(buffer.as_buffer());
     });
 }

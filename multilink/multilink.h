@@ -29,8 +29,10 @@ namespace Multilink {
 
         Link& add_link(Stream* stream, std::string name = "default");
 
-        /** Queue packet to be sent. Returns true if suceeded. */
-        bool send_with_offset(const Buffer data);
+        bool is_send_ready();
+
+        /** Queue packet to be sent. */
+        void send_with_offset(const Buffer data);
 
         size_t get_send_offset() { return 0; }
 
