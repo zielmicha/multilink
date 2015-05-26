@@ -34,6 +34,8 @@ AllocBuffer::AllocBuffer(size_t size): size(size) {
     data = new char[size];
 }
 
+AllocBuffer::AllocBuffer(): size(0), data(nullptr) {}
+
 AllocBuffer::~AllocBuffer() {
     delete[] data;
 }
@@ -43,10 +45,20 @@ AllocBuffer::AllocBuffer(AllocBuffer&& other): size(other.size), data(other.data
     other.data = nullptr;
 }
 
+AllocBuffer& AllocBuffer::operator=(AllocBuffer&& other) {
+    if(&other != this) {
+        delete[] data;
+
+        data = other.data;
+        size = other.size;
+        other.data = nullptr;
+        other.size = 0;
+    }
+    return *this;
+}
+
 AllocBuffer AllocBuffer::copy(Buffer data) {
     AllocBuffer n {data.size};
     data.copy_to(n.as_buffer());
     return n;
 }
-
-AllocBuffer::AllocBuffer(): size(0), data(nullptr) {}

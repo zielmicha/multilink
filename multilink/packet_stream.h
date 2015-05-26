@@ -10,9 +10,11 @@ using optional = boost::optional<T>;
 class PacketStream {
 public:
     virtual optional<Buffer> recv() = 0;
+    // TODO: send should return void and abort if can't send
     virtual bool send(const Buffer data) = 0;
     virtual bool send_with_offset(Buffer data) = 0;
     virtual size_t get_send_offset() = 0;
+    virtual bool is_send_ready() = 0;
 
     virtual void close() = 0;
 
