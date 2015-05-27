@@ -42,9 +42,14 @@ class Transport : public std::enable_shared_from_this<Transport> {
     Transport(std::shared_ptr<PacketStream> network_stream, TargetCreator target_creator, size_t mtu)
         : network_stream(network_stream), target_creator(target_creator), mtu(mtu) {}
 
+    std::shared_ptr<ChildStream> get_child_stream(uint64_t id);
     void create_child_stream(uint64_t id);
+
     void target_send_ready(std::shared_ptr<ChildStream> child);
     void target_recv_ready(std::shared_ptr<ChildStream> child);
+    bool target_recv_ready_once(std::shared_ptr<ChildStream> child);
+
+    void place_packet(uint64_t id, uint64_t seq, Buffer data);
 
     void network_send_ready();
     void network_recv_ready();
