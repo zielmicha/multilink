@@ -49,3 +49,7 @@ target_link_libraries(WriteQueueTest multilink reactor)
 add_executable(IOUtilTest
   tests/ioutil_test.cpp)
 target_link_libraries(IOUtilTest reactor)
+
+add_executable(TransportTest
+  tests/transport_test.cpp)
+target_link_libraries(TransportTest multilink reactor)

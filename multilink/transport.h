@@ -55,8 +55,10 @@ class Transport : public std::enable_shared_from_this<Transport> {
     void network_recv_ready();
 
 public:
-    std::shared_ptr<Transport> create(std::shared_ptr<PacketStream> network_stream,
-                                      TargetCreator target_creator, size_t mtu);
+    static std::shared_ptr<Transport> create(
+        Reactor& reactor,
+        std::shared_ptr<PacketStream> network_stream,
+        TargetCreator target_creator, size_t mtu);
 };
 
 #endif

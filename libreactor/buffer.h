@@ -100,7 +100,7 @@ public:
     AllocBuffer& operator=(const AllocBuffer&) = delete;
 
     static AllocBuffer copy(Buffer);
-    bool empty() { return data != nullptr; }
+    bool empty() { return data == nullptr; }
 
     Buffer as_buffer() {
         return Buffer(data, size);

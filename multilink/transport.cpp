@@ -1,4 +1,6 @@
 #include "transport.h"
+#define LOGGER_NAME "transport"
+#include "logging.h"
 
 // MAX_BUFFER_SIZE - BUFFER_SIZE_MARK has to be bigger than bandwidth-delay product
 //const int MAX_BUFFER_SIZE = 8 * 1024 * 1024;
@@ -9,10 +11,14 @@ const int MAX_BUFFER_PACKETS = 16 * 1024;
 //const uint64_t CHOKE_CHANNEL = std::numeric_limits<uint64_t>::max();
 //const uint64_t UNCHOKE_CHANNEL = CHOKE_CHANNEL - 1;
 
-std::shared_ptr<Transport> Transport::create(std::shared_ptr<PacketStream> network_stream,
-                                             TargetCreator target_creator, size_t mtu) {
+std::shared_ptr<Transport> Transport::create(
+    Reactor& reactor,
+    std::shared_ptr<PacketStream> network_stream,
+    TargetCreator target_creator, size_t mtu) {
     std::shared_ptr<Transport> transport {new Transport(network_stream, target_creator, mtu)};
 
+    reactor.schedule(std::bind(&Transport::network_send_ready, transport));
+    reactor.schedule(std::bind(&Transport::network_recv_ready, transport));
     network_stream->set_on_send_ready(std::bind(&Transport::network_send_ready, transport));
     network_stream->set_on_recv_ready(std::bind(&Transport::network_recv_ready, transport));
 
@@ -47,13 +53,17 @@ void Transport::create_child_stream(uint64_t id) {
         target->set_on_send_ready(std::bind(&Transport::target_send_ready, shared_this, stream));
         target->set_on_recv_ready(std::bind(&Transport::target_recv_ready, shared_this, stream));
 
+        shared_this->target_send_ready(stream);
+        shared_this->target_recv_ready(stream);
+
         return {};
     });
 }
 
 void Transport::target_send_ready(std::shared_ptr<ChildStream> child) {
+    LOG("target_send_ready");
     while(!child->buffer.empty() && !child->buffer.front().empty()) {
-        if(child->target->is_send_ready()) {
+        if(child->target && child->target->is_send_ready()) {
             child->target->send(child->buffer.front().as_buffer());
             child->buffer.pop_front();
             child->last_forwarded_packet ++;
@@ -68,11 +78,14 @@ void Transport::target_recv_ready(std::shared_ptr<ChildStream> child) {
     while(true) {
         if(!network_stream->is_send_ready()) break;
 
-        Transport::target_recv_ready_once(child);
+        if(!Transport::target_recv_ready_once(child)) break;
     }
 }
 
 bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
+    if(!child->target)
+        return false;
+
     optional<Buffer> packet = child->target->recv();
     if(packet) {
         AllocBuffer new_buffer_alloc {packet->size + 2 * sizeof(uint64_t)}; // TODO: use single member buffer
@@ -95,6 +108,7 @@ void Transport::network_recv_ready() {
         if(packet) {
             uint64_t id = packet->convert<uint64_t>(0);
             uint64_t seq = packet->convert<uint64_t>(8);
+
             place_packet(id, seq, packet->slice(16));
         } else {
             return;
@@ -103,7 +117,10 @@ void Transport::network_recv_ready() {
 }
 
 void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
+    LOG("network recv " << id << " " << seq << " " << data);
     auto child = get_child_stream(id);
+    LOG("child acquired");
+
     uint64_t rel_seq = seq - child->last_sent_packet;
     if(rel_seq >= MAX_BUFFER_PACKETS) {
         // TODO: close connection instead of failing
@@ -118,6 +135,7 @@ void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
 
     if(!child->buffer[rel_seq].empty()) {
         // duplicate
+        LOG("dup!");
         return;
     }
 
