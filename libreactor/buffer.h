@@ -49,6 +49,10 @@ public:
         memcpy(target.data, data, size);
     }
 
+    void copy_from(const Buffer from) {
+        from.copy_to(*this);
+    }
+
     void set_zero() {
         memset(data, 0, size);
     }

@@ -95,6 +95,7 @@ bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
         child->last_sent_packet ++;
         new_buffer.convert<uint64_t>(0) = child->id;
         new_buffer.convert<uint64_t>(8) = child->last_sent_packet;
+        new_buffer.slice(16).copy_from(*packet);
 
         network_stream->send(new_buffer);
         return true;
@@ -118,7 +119,7 @@ void Transport::network_recv_ready() {
 }
 
 void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
-    LOG("network recv " << id << " " << seq << " " << data);
+    DEBUG("network recv " << id << " " << seq << " " << data);
     auto child = get_child_stream(id);
 
     int64_t rel_seq_64 = int64_t(seq) - child->last_forwarded_packet;
