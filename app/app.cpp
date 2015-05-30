@@ -36,19 +36,25 @@ public:
         std::string type = message["type"].string_value();
         std::cerr << "recv " << message.dump() << std::endl;
 
-        if(type == "provide-stream") {
+        std::unordered_map<std::string, std::function<void()>> ops;
+
+        ops["provide-stream"] = [&]() {
             int num = message["num"].int_value();
             FD* fd = stream->abandon();
             unused_stream_fds[num] = fd;
             ioutil::write(fd, ByteString::copy_from("ok\n"));
-        } else if(type == "pass-stream") {
+        };
+
+        ops["pass-stream"] = [&]() {
             int num = message["num"].int_value();
             stream->recv_fd().then<unit>([=](int fd) -> unit {
                 unused_stream_fds[num] = &reactor.take_fd(fd);
                 ioutil::write(stream->abandon(), ByteString::copy_from("ok\n"));
                 return {};
             });
-        } else if(type == "multilink") {
+        };
+
+        ops["multilink"] = [&]() {
             int num = message["num"].int_value();
             int stream_fd = message["stream_fd"].int_value();
             multilinks[num] = std::make_shared<Multilink::Multilink>(reactor);
@@ -61,11 +67,15 @@ public:
             }
             pipe(reactor, multilinks[num], target, Multilink::MULTILINK_MTU);
             pipe(reactor, target, multilinks[num], Multilink::MULTILINK_MTU);
-        } else if(type == "add-link") {
+        };
+
+        ops["add-link"] = [&]() {
             int num = message["num"].int_value();
             int stream_fd = message["stream_fd"].int_value();
             multilinks[num]->add_link(take_fd(stream_fd), message["name"].string_value());
-        } else if(type == "limit-stream") {
+        };
+
+        ops["limit-stream"] = [&]() {
             int stream_fd = message["stream_fd"].int_value();
             Stream* s = take_fd(stream_fd);
             int delay = message["delay"].int_value();
@@ -77,9 +87,13 @@ public:
             s->set_on_read_ready([](){});
             s->set_on_write_ready([](){});
             unused_stream_fds[stream_fd] = s;
-        } else {
-            std::cerr << "bad type " << type << std::endl;
-        }
+        };
+
+        auto method = ops.find(type);
+        if(method == ops.end())
+            std::cerr << "bad call " << type << std::endl;
+        else
+            method->second();
     }
 };
 

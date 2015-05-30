@@ -4,6 +4,8 @@
 #include "misc.h"
 #include "exfunctional.h"
 #include "logging.h"
+#include "write_queue.h"
+#include "timer.h"
 
 std::vector<std::shared_ptr<PacketStream> > packet_stream_pair(Reactor& reactor) {
     auto p = fd_pair(reactor);
@@ -26,6 +28,7 @@ void packet_printer(Reactor& reactor, std::shared_ptr<PacketStream> stream, std:
 
 int main() {
     Reactor reactor;
+    Timer timer {reactor};
 
     std::vector<std::shared_ptr<PacketStream> > network = packet_stream_pair(reactor);
     std::vector<std::shared_ptr<PacketStream> > target = packet_stream_pair(reactor);
@@ -45,12 +48,31 @@ int main() {
     packet_printer(reactor, network[0], "network");
     packet_printer(reactor, target[0], "target");
 
-    AllocBuffer ab(17);
-    Buffer b = ab.as_buffer();
-    b.convert<uint64_t>(0) = 0;
-    b.convert<uint64_t>(8) = 0;
-    b.data[16] = 'z';
-    network[0]->send(b);
+
+    auto queue = WriteQueue::create(reactor, network[0], 4096 * 100);
+
+    int l = 10;
+    for(int i=0; i < l; i ++) {
+        AllocBuffer ab(17);
+        Buffer b = ab.as_buffer();
+        b.convert<uint64_t>(0) = 0;
+        b.convert<uint64_t>(8) = l - i - 1;
+        b.data[16] = 'a' + i;
+        assert(queue->send(b));
+    }
+
+    timer.once(100 * 1000, [&]() {
+        for(int i : {0, 1, 4, 4, 3, 1, 2}) {
+            AllocBuffer ab(17);
+            Buffer b = ab.as_buffer();
+            b.convert<uint64_t>(0) = 0;
+            b.convert<uint64_t>(8) = l + i;
+            b.data[16] = 'A' + i;
+            assert(queue->send(b));
+            assert(queue->send(b));
+        }
+
+    });
 
     reactor.run();
 }
