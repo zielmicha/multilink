@@ -5,7 +5,7 @@
 
 namespace Multilink {
     const size_t MTU = Multilink::LINK_MTU;
-    const uint64_t PING_INTERVAL = 1000 * 1000 * 1;
+    const uint64_t PING_INTERVAL = 1000 * 1000 * 4;
 
     Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
                                                   stream(stream),
@@ -99,7 +99,7 @@ namespace Multilink {
             send_pong();
             return true;
         } else if(should_ping()) {
-            LOG(*this << " send_aux " << " should_ping");
+            DEBUG(*this << " send_aux " << " should_ping");
             send_ping();
             return true;
         } else {

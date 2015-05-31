@@ -96,11 +96,12 @@ bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
         AllocBuffer new_buffer_alloc {packet->size + 2 * sizeof(uint64_t)}; // TODO: use single member buffer
         Buffer new_buffer = new_buffer_alloc.as_buffer();
 
-        child->last_sent_packet ++;
         new_buffer.convert<uint64_t>(0) = child->id;
         new_buffer.convert<uint64_t>(8) = child->last_sent_packet;
+        child->last_sent_packet ++;
         new_buffer.slice(16).copy_from(*packet);
 
+        LOG("network send " << new_buffer);
         network_stream->send(new_buffer);
         return true;
     } else {

@@ -64,7 +64,7 @@ namespace Multilink {
                 on_send_ready();
             }
             if(queue.empty()) {
-                LOG("multilink queue empty");
+                DEBUG("multilink queue empty");
                 break;
             }
 

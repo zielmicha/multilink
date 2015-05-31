@@ -25,11 +25,9 @@ class Handler(app_client.HandlerBase):
         f.flush()
         return f
 
-    def handle_child(self, child, child_addr):
+    def run(self):
         ident = os.urandom(16).encode('hex')
-        print 'handle connection', ident
-
-        m_id = self.make_multilink(child.makefile('r+'))
+        m_id = self.make_multilink(self.listen_addr)
 
         for bind, addr in self.connect_addrs:
             conn = self.create_connection(ident, bind, addr)
@@ -39,26 +37,11 @@ class Handler(app_client.HandlerBase):
             with self.lock:
                 self.ctl.add_link(m_id, conn_fd, name)
 
-    def run(self):
-        server = socket.socket()
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        server.bind(self.listen_addr)
-        server.listen(5)
-        while True:
-            child, addr = server.accept()
-            t = threading.Thread(target=self.handle_child, args=[child, addr])
-            t.daemon = True
-            t.start()
-            del child
-
-    def make_multilink(self, stream):
+    def make_multilink(self, addr):
         m_id = self.multilink_counter
         self.multilink_counter += 1
 
-        stream_fd = self.provide_stream(stream, 'client internal')
-
-        self.ctl.make_multilink(m_id, stream_fd, free=True)
+        self.ctl.make_multilink_with_transport(m_id, is_server=False, addr=addr)
         return m_id
 
 if __name__ == '__main__':
@@ -76,4 +59,4 @@ if __name__ == '__main__':
         parse_addr(addr) for addr in args.connect_addrs ]
 
     Handler(args.sock, connect_addrs,
-            ('localhost', args.listen_port)).run()
+            ('127.0.0.1', args.listen_port)).run()

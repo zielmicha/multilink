@@ -93,8 +93,7 @@ public:
         };
 
         ops["multilink-client-server"] = [&]() {
-            int multilink_num = message["multilink_num"].int_value();
-            int transport_num = message["transport_num"].int_value();
+            int multilink_num = message["num"].int_value();
             bool is_server = message["is_server"].bool_value();
 
             std::string host = message["host"].string_value();
@@ -117,8 +116,6 @@ public:
             if(!is_server) {
                 create_listening_tcp_target_creator(reactor, target, host, port);
             }
-
-            transports[transport_num] = target;
         };
 
         auto method = ops.find(type);
@@ -129,7 +126,7 @@ public:
     }
 };
 
-int main() {
+int main(int argc, char** args) {
     Reactor reactor;
 
     Server server {reactor};
@@ -137,7 +134,7 @@ int main() {
                         Json message) {
         server.callback(stream, message);
     };
-    auto rpcserver = RPCServer::create(reactor, "app.sock",
+    auto rpcserver = RPCServer::create(reactor, argc == 2 ? args[1] : "app.sock",
                                        callback);
 
     reactor.run();

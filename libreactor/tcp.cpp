@@ -72,6 +72,8 @@ namespace TCP {
         if(::listen(sockfd, SOMAXCONN) < 0)
             errno_to_exception();
 
+        LOG("listening on " << addr << ":" << port);
+
         fd->on_read_ready = [&reactor, fd, sockfd, accept_cb]() {
             while(true) {
                 int client = accept(sockfd, 0, 0);

@@ -17,6 +17,7 @@ void create_listening_tcp_target_creator(Reactor& reactor, std::shared_ptr<Trans
     TCP::listen(reactor, host, port, [&reactor, next_id, transport] (FD* fd) {
         uint64_t& id_ref = *(next_id);
         uint64_t id = id_ref++;
+        LOG("incoming connection, assigned id: " << id);
 
         auto stream = FreePacketStream::create(reactor, fd);
         transport->add_target(id, Future<std::shared_ptr<PacketStream> >::make_immediate(stream));

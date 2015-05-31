@@ -36,6 +36,10 @@ class Connection(object):
                    'num': num, 'stream_fd': stream_fd,
                    'free': free})
 
+    def make_multilink_with_transport(self, num, addr, is_server):
+        self.send({'type': 'multilink-client-server', 'num': num,
+                   'host': addr[0], 'port': int(addr[1]), 'is_server': is_server})
+
     def add_link(self, num, stream_fd, name):
         self.send({'type': 'add-link', 'name': name,
                    'num': num, 'stream_fd': stream_fd})

@@ -10,8 +10,9 @@ class Handler(app_client.HandlerBase):
         self.src_addr = src_addr
         self.sock_path = sock_path
 
-        self.multilink_counter = 0
-        self.stream_counter = 0
+        # start with 1000, so we can run on one instance with client
+        self.multilink_counter = 1000
+        self.stream_counter = 1000
         self.multilinks = {}
 
         self.lock = threading.RLock()
@@ -51,10 +52,8 @@ class Handler(app_client.HandlerBase):
         self.multilink_counter += 1
 
         print 'create multilink id=%s bound to %s' % (m_id, self.target_addr)
-        stream = socket.create_connection(self.target_addr).makefile('r+')
-        stream_fd = self.provide_stream(stream, 'server internal')
 
-        self.ctl.make_multilink(m_id, stream_fd, free=True)
+        self.ctl.make_multilink_with_transport(m_id, is_server=True, addr=self.target_addr)
 
     def add_link(self, id, sock, name):
         m_id = self.multilinks[id]
@@ -69,5 +68,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    Handler(args.sock, ('localhost', args.target_port),
+    Handler(args.sock, ('127.0.0.1', args.target_port),
             ('0.0.0.0', args.src_port)).run()
