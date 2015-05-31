@@ -101,7 +101,7 @@ bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
         child->last_sent_packet ++;
         new_buffer.slice(16).copy_from(*packet);
 
-        LOG("network send " << new_buffer);
+        DEBUG("network send " << new_buffer);
         network_stream->send(new_buffer);
         return true;
     } else {
