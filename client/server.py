@@ -5,10 +5,11 @@ import threading
 import struct
 
 class Handler(app_client.HandlerBase):
-    def __init__(self, sock_path, target_addr, src_addr):
+    def __init__(self, sock_path, target_addr, listen_addr):
+        super(Handler, self).__init__(sock_path)
+
         self.target_addr = target_addr
-        self.src_addr = src_addr
-        self.sock_path = sock_path
+        self.listen_addr = listen_addr
 
         # start with 1000, so we can run on one instance with client
         self.multilink_counter = 1000
@@ -16,13 +17,11 @@ class Handler(app_client.HandlerBase):
         self.multilinks = {}
 
         self.lock = threading.RLock()
-        self.ctl = app_client.Connection(sock_path)
 
     def run(self):
         sock = socket.socket()
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        sock.bind(self.src_addr)
+        sock.bind(self.listen_addr)
         sock.listen(5)
 
         while True:
@@ -62,11 +61,11 @@ class Handler(app_client.HandlerBase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('sock')
-    parser.add_argument('target_port', type=int)
-    parser.add_argument('src_port', type=int)
+    parser.add_argument('--sock', help='C++ server Unix socket (by default spawn it)')
+    parser.add_argument('target_port', type=int, help='Target port')
+    parser.add_argument('listen_port', type=int)
 
     args = parser.parse_args()
 
     Handler(args.sock, ('127.0.0.1', args.target_port),
-            ('0.0.0.0', args.src_port)).run()
+            ('0.0.0.0', args.listen_port)).run()

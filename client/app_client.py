@@ -5,6 +5,28 @@ import threading
 import time
 import sys
 import passfd
+import os
+import subprocess
+import functools
+
+def find_app():
+    if os.path.exists('./app'):
+        return './app'
+    else:
+        return '../build/app'
+
+def spawn_app():
+    path = find_app()
+    sock_path = '/tmp/.app_%s' % os.urandom(16).encode('hex')
+    proc = subprocess.Popen([path, sock_path])
+
+    while proc.poll() is None:
+        if os.path.exists(sock_path):
+            break
+
+        time.sleep(0.1)
+
+    return sock_path, proc
 
 class Connection(object):
     def __init__(self, path='../build/app.sock'):
@@ -89,6 +111,20 @@ def pipe2(label, a, b):
     pipe(label + ' b->a', b, a)
 
 class HandlerBase(object):
+    def __init__(self, sock_path):
+        self._exitproc = None
+        self.app = None
+
+        if not sock_path:
+            self.sock_path, self.app = spawn_app()
+            self._exitproc = functools.partial(os.unlink, self.sock_path)
+
+        self.ctl = Connection(self.sock_path)
+
+    def __del__(self):
+        if self._exitproc:
+            self._exitproc()
+
     def provide_stream(self, stream, name='provide'):
         id = self.stream_counter
         conn = Connection(self.sock_path)

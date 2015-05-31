@@ -7,11 +7,13 @@ import threading
 
 class Handler(app_client.HandlerBase):
     def __init__(self, sock_path, connect_addrs, listen_addr):
-        self.sock_path = sock_path
-        self.ctl = app_client.Connection(self.sock_path)
+        super(Handler, self).__init__(sock_path)
+
         self.connect_addrs = connect_addrs
         self.listen_addr = listen_addr
+
         self.lock = threading.Lock()
+
         self.multilink_counter = 0
         self.stream_counter = 0
 
@@ -37,6 +39,9 @@ class Handler(app_client.HandlerBase):
             with self.lock:
                 self.ctl.add_link(m_id, conn_fd, name)
 
+        if self.app:
+            self.app.wait()
+
     def make_multilink(self, addr):
         m_id = self.multilink_counter
         self.multilink_counter += 1
@@ -46,7 +51,7 @@ class Handler(app_client.HandlerBase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('sock')
+    parser.add_argument('--sock')
     parser.add_argument('listen_port', type=int)
     parser.add_argument('connect_addrs', nargs='+')
     args = parser.parse_args()
