@@ -25,7 +25,7 @@ class Transport : public std::enable_shared_from_this<Transport> {
         void check_forward();
 
         // send side (recvs from target)
-        uint64_t last_sent_packet;
+        uint64_t last_sent_packet = 0;
         bool choked;
 
         ChildStream();

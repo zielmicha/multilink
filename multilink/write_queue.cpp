@@ -1,4 +1,5 @@
 #include "write_queue.h"
+#define LOGGER_NAME "writequeue"
 #include "logging.h"
 
 const int MTU = 4096; // TODO
@@ -22,7 +23,7 @@ bool WriteQueue::send(const Buffer data) {
 
 void WriteQueue::on_send_ready() {
     while(!queue.empty() && output->is_send_ready()) {
-        send(queue.front());
+        output->send(queue.front());
         queue.pop_front();
     }
 }

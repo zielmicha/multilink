@@ -32,6 +32,7 @@ Transport::ChildStream::ChildStream() {
 std::shared_ptr<Transport::ChildStream> Transport::get_child_stream(uint64_t id) {
     auto it = children.find(id);
     if(it == children.end()) {
+        LOG("create child");
         create_child_stream(id);
         return children.find(id)->second;
     } else {
@@ -61,7 +62,7 @@ void Transport::create_child_stream(uint64_t id) {
 }
 
 void Transport::target_send_ready(std::shared_ptr<ChildStream> child) {
-    LOG("target_send_ready");
+    DEBUG("target_send_ready");
     while(!child->buffer.empty() && !child->buffer.front().empty()) {
         if(child->target && child->target->is_send_ready()) {
             child->target->send(child->buffer.front().as_buffer());
@@ -94,6 +95,7 @@ bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
         child->last_sent_packet ++;
         new_buffer.convert<uint64_t>(0) = child->id;
         new_buffer.convert<uint64_t>(8) = child->last_sent_packet;
+        new_buffer.slice(16).copy_from(*packet);
 
         network_stream->send(new_buffer);
         return true;
@@ -117,21 +119,29 @@ void Transport::network_recv_ready() {
 }
 
 void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
-    LOG("network recv " << id << " " << seq << " " << data);
+    DEBUG("network recv " << id << " " << seq << " " << data);
     auto child = get_child_stream(id);
-    LOG("child acquired");
 
-    uint64_t rel_seq = seq - child->last_sent_packet;
-    if(rel_seq >= MAX_BUFFER_PACKETS) {
+    int64_t rel_seq_64 = int64_t(seq) - child->last_forwarded_packet;
+
+    if(rel_seq_64 < 0) {
+        LOG("old dup!");
+        return;
+    }
+
+    if(rel_seq_64 >= MAX_BUFFER_PACKETS) {
         // TODO: close connection instead of failing
         assert(false);
     }
 
+    int rel_seq = rel_seq_64;
+
     // TODO: check if MAX_QUEUE_SIZE is not exceeded
     // TODO: choke/unchoke
 
-    if(child->buffer.size() < rel_seq + 1)
+    if((int)child->buffer.size() < rel_seq + 1) {
         child->buffer.resize(rel_seq + 1);
+    }
 
     if(!child->buffer[rel_seq].empty()) {
         // duplicate
