@@ -1,6 +1,6 @@
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <vector>
 #include <functional>
 #include <unordered_map>

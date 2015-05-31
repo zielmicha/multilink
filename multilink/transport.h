@@ -59,6 +59,8 @@ public:
         Reactor& reactor,
         std::shared_ptr<PacketStream> network_stream,
         TargetCreator target_creator, size_t mtu);
+
+    void add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > stream);
 };
 
 #endif

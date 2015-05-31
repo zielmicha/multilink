@@ -1,4 +1,6 @@
 #include "multilink.h"
+#include "transport.h"
+#include "transport_targets.h"
 #include <iostream>
 #include <memory>
 #include "rpc.h"
@@ -10,6 +12,7 @@ class Server {
     Reactor& reactor;
     std::unordered_map<int, Stream*> unused_stream_fds;
     std::unordered_map<int, std::shared_ptr<Multilink::Multilink> > multilinks;
+    std::unordered_map<int, std::shared_ptr<Transport> > transports;
 
     // TODO: move from raw pointers to shared_ptrs
     std::vector<std::shared_ptr<void>> keep_pointers;
@@ -87,6 +90,35 @@ public:
             s->set_on_read_ready([](){});
             s->set_on_write_ready([](){});
             unused_stream_fds[stream_fd] = s;
+        };
+
+        ops["multilink-client-server"] = [&]() {
+            int multilink_num = message["multilink_num"].int_value();
+            int transport_num = message["transport_num"].int_value();
+            bool is_server = message["is_server"].bool_value();
+
+            std::string host = message["host"].string_value();
+            int port = message["port"].int_value();
+
+            multilinks[multilink_num] = std::make_shared<Multilink::Multilink>(reactor);
+
+            TargetCreator target_creator;
+
+            if(is_server) {
+                target_creator = create_connecting_tcp_target_creator(reactor, host, port);
+            } else {
+                target_creator = unknown_stream_target_creator();
+            }
+
+            std::shared_ptr<Transport> target = Transport::create(reactor,
+                                                                  multilinks[multilink_num],
+                                                                  target_creator, Multilink::MULTILINK_MTU);
+
+            if(!is_server) {
+                create_listening_tcp_target_creator(reactor, target, host, port);
+            }
+
+            transports[transport_num] = target;
         };
 
         auto method = ops.find(type);

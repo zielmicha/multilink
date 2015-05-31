@@ -41,6 +41,10 @@ std::shared_ptr<Transport::ChildStream> Transport::get_child_stream(uint64_t id)
 }
 
 void Transport::create_child_stream(uint64_t id) {
+    add_target(id, target_creator(id));
+}
+
+void Transport::add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > target) {
     std::shared_ptr<ChildStream> stream {new ChildStream()};
     stream->id = id;
     stream->transport = shared_from_this();
@@ -48,7 +52,7 @@ void Transport::create_child_stream(uint64_t id) {
 
     auto shared_this = shared_from_this();
 
-    target_creator(id).then<unit>([shared_this, stream](std::shared_ptr<PacketStream> target) -> unit {
+    target.then<unit>([shared_this, stream](std::shared_ptr<PacketStream> target) -> unit {
         stream->target = target;
 
         target->set_on_send_ready(std::bind(&Transport::target_send_ready, shared_this, stream));

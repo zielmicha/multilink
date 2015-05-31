@@ -35,6 +35,7 @@ add_library(multilink STATIC
   multilink/packet_stream_util.cpp
   multilink/write_queue.cpp
   multilink/transport.cpp
+  multilink/transport_targets.cpp
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
 

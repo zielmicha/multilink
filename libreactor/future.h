@@ -54,6 +54,16 @@ class Future {
 public:
     explicit Future(std::shared_ptr<_BaseFutureData<T> > data): data(data) {}
 
+#ifdef ENABLE_FUTURE_CAST
+    // Think if it is really safe (i.e. different _BaseFutureDatas has same layouts)
+    std::shared_ptr<void> _get_data() { return std::static_pointer_cast<void>(data); }
+
+    template <typename R,
+              typename = std::enable_if<std::is_convertible<R, T>::value > >
+    Future(Future<R> other): data(
+        std::static_pointer_cast<_BaseFutureData<T> >(other._get_data())) {}
+#endif
+
     static Future<T> make_immediate(T value) {
         auto dataptr = new _FutureData<T>;
         dataptr->state = FutureState::IMMEDIATE_VALUE;
