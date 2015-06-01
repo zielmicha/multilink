@@ -31,18 +31,19 @@ namespace TCP {
                 int result;
                 socklen_t result_len = sizeof(result);
                 if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &result, &result_len) < 0) {
-                    completer.result_failure(errno_get_exception());
+                    if(!completer.future().has_result())
+                        completer.result_failure(errno_get_exception());
                     return;
                 }
 
                 if (result != 0) {
                     errno = result;
-                    completer.result_failure(errno_get_exception());
+                    if(!completer.future().has_result())
+                        completer.result_failure(errno_get_exception());
                     return;
                 }
 
                 if(!completer.future().has_result()) {
-                    // reactor.later([fd]() { fd->on_write_ready(); })
                     completer.result(fd);
                 }
             };

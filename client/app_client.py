@@ -118,6 +118,8 @@ class HandlerBase(object):
         if not sock_path:
             self.sock_path, self.app = spawn_app()
             self._exitproc = functools.partial(os.unlink, self.sock_path)
+        else:
+            self.sock_path = sock_path
 
         self.ctl = Connection(self.sock_path)
 

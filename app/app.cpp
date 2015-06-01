@@ -7,6 +7,7 @@
 #include "ioutil.h"
 #include "throttled.h"
 #include "packet_stream_util.h"
+#include "logging.h"
 
 class Server {
     Reactor& reactor;
@@ -127,6 +128,8 @@ public:
 };
 
 int main(int argc, char** args) {
+    setup_crash_handlers();
+
     Reactor reactor;
 
     Server server {reactor};
