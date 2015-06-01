@@ -90,7 +90,9 @@ FD& Reactor::take_fd(int fd) {
     return fds.find(fd)->second;
 }
 
-Reactor::Reactor() {}
+Reactor::Reactor() {
+    Signals::ignore_signal(SIGPIPE);
+}
 
 void Reactor::schedule(std::function<void()> func) {
     assert(scheduled_functions.size() < 1000);

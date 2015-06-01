@@ -1,11 +1,10 @@
 #include <cstdio>
-#include <signal.h>
 #include <unistd.h>
 #include <vector>
-#include <functional>
 #include <unordered_map>
 #define LOGGER_NAME "signals"
 #include "logging.h"
+#include "signals.h"
 
 namespace Signals {
     sigset_t sigset;
@@ -22,6 +21,12 @@ namespace Signals {
 
     void handle(int sig) {
         signal_appeared[sig] = true;
+    }
+
+    void ignore_signal(int sig) {
+        init();
+
+        signal(sig, SIG_IGN);
     }
 
     void register_signal_handler(int sig, std::function<void()> fun) {
