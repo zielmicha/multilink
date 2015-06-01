@@ -28,10 +28,10 @@ size_t FD::write(const Buffer data) {
     assert(data.size != 0);
     int ret = ::write(fd, data.data, data.size);
     if(ret < 0) {
-        if(errno == EAGAIN)
-            return 0;
-        else
-            errno_to_exception();
+        if(errno != EAGAIN)
+            handle_error(true);
+
+        return 0;
     } else {
         return (size_t)ret;
     }
@@ -58,13 +58,20 @@ Buffer FD::read(Buffer data) {
     epoch_read_bytes += ret;
     #endif
     if(ret < 0) {
-        if(errno == EAGAIN)
-            return data.slice(0, 0);
-        else
-            errno_to_exception();
+        if(errno != EAGAIN)
+            handle_error(true);
+
+        return data.slice(0, 0);
     } else {
         return data.slice(0, (size_t)ret);
     }
+}
+
+void FD::handle_error(bool use_errno) {
+    if(error_reported) return;
+    error_reported = true;
+
+    reactor.schedule(on_error);
 }
 
 int FD::fileno() {
@@ -130,7 +137,7 @@ void Reactor::step() {
         if(r.write_ready)
             fd.on_write_ready();
         if(r.error)
-            fd.on_error();
+            fd.handle_error(false);
     }
 
     DEBUG("step finished");
