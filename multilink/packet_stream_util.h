@@ -12,6 +12,7 @@ protected:
     Buffer send_buffer_current;
 
     void write_ready();
+    void error_ready();
 
     FreeWriterPacketStream(Reactor& reactor, Stream* stream);
 public:

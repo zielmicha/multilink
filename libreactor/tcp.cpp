@@ -28,6 +28,8 @@ namespace TCP {
             completer.result(fd);
         } else {
             fd->on_write_ready = [fd, completer, sockfd]() {
+                auto refkeep = fd->on_write_ready; // keep everything until exit
+
                 int result;
                 socklen_t result_len = sizeof(result);
                 if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &result, &result_len) < 0) {

@@ -57,6 +57,7 @@ void Transport::add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > t
 
         target->set_on_send_ready(std::bind(&Transport::target_send_ready, shared_this, stream));
         target->set_on_recv_ready(std::bind(&Transport::target_recv_ready, shared_this, stream));
+        target->set_on_error(std::bind(&Transport::target_error, shared_this, stream));
 
         shared_this->target_send_ready(stream);
         shared_this->target_recv_ready(stream);
@@ -107,6 +108,10 @@ bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
     } else {
         return false;
     }
+}
+
+void Transport::target_error(std::shared_ptr<ChildStream> child) {
+    LOG("target closed");
 }
 
 void Transport::network_recv_ready() {

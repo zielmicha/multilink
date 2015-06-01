@@ -1,6 +1,7 @@
 #include "packet_stream_util.h"
 #define LOGGER_NAME "packetstreamutil"
 #include "logging.h"
+#include "misc.h"
 
 const int MTU = 16384;
 
@@ -14,6 +15,7 @@ std::shared_ptr<FreePacketStream> FreePacketStream::create(
     std::shared_ptr<FreePacketStream> self {new FreePacketStream(reactor, stream, mtu)};
     stream->set_on_write_ready_and_schedule(reactor, std::bind(&FreePacketStream::write_ready, self));
     stream->set_on_read_ready_and_schedule(reactor, std::bind(&FreePacketStream::read_ready, self));
+    stream->set_on_error(std::bind(&FreePacketStream::error_ready, self));
     return self;
 }
 
@@ -36,6 +38,10 @@ FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, Stream* stream)
     stream(stream),
     send_buffer(MTU),
     send_buffer_current(NULL, 0) {}
+
+void FreeWriterPacketStream::error_ready() {
+    this->on_error();
+}
 
 void FreeWriterPacketStream::send_with_offset(const Buffer data) {
     assert(data.size <= MTU);
@@ -80,6 +86,7 @@ std::shared_ptr<LengthPacketStream> LengthPacketStream::create(
         reactor, std::bind(&LengthPacketStream::write_ready, self));
     stream->set_on_read_ready_and_schedule(
         reactor, std::bind(&LengthPacketStream::read_ready, self));
+    stream->set_on_error(std::bind(&LengthPacketStream::error_ready, self));
     return self;
 }
 

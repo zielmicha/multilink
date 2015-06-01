@@ -48,6 +48,7 @@ class Transport : public std::enable_shared_from_this<Transport> {
     void target_send_ready(std::shared_ptr<ChildStream> child);
     void target_recv_ready(std::shared_ptr<ChildStream> child);
     bool target_recv_ready_once(std::shared_ptr<ChildStream> child);
+    void target_error(std::shared_ptr<ChildStream> child);
 
     void place_packet(uint64_t id, uint64_t seq, Buffer data);
 
