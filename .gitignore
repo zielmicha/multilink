@@ -2,3 +2,5 @@
 /libcrafter
 /build
 *.pyc
+# Collected characteristic functions
+*.p
