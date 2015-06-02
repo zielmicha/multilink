@@ -48,6 +48,12 @@ struct _FutureData : public _BaseFutureData<typename CASTER::Target> {
 };
 
 template <typename T>
+struct FutureMaybeUnwrap {
+    // if T is Future<X> return X else return T
+    typedef T type;
+};
+
+template <typename T>
 class Future {
     std::shared_ptr<_BaseFutureData<T> > data;
 
@@ -103,6 +109,14 @@ public:
     template <typename R>
     Future<R> then(std::function<R(T)> fun) const;
 
+    /** Automatically deduce X in then<X>(...) */
+    template <typename F,
+              typename RetType = typename FutureMaybeUnwrap<
+                  decltype(std::declval<F>()(std::declval<T>()))>::type >
+    auto then(F fun) const -> Future<RetType> {
+        return then<RetType>(fun);
+    }
+
     bool has_result() const {
         return data->state != FutureState::WAITING;
     }
@@ -120,6 +134,11 @@ public:
 
     void ignore() const {
     }
+};
+
+template <typename T>
+struct FutureMaybeUnwrap<Future<T> > {
+    typedef T type;
 };
 
 template <typename T, typename CASTER = _NoCast<T> >

@@ -53,3 +53,7 @@ target_link_libraries(IOUtilTest reactor)
 add_executable(TransportTest
   tests/transport_test.cpp)
 target_link_libraries(TransportTest multilink reactor)
+
+add_executable(FutureTest
+  tests/future_test.cpp)
+target_link_libraries(FutureTest reactor)

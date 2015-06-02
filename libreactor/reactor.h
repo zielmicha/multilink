@@ -50,6 +50,9 @@ private:
     int fd;
     FD(Reactor& r, int fd);
 
+    bool error_reported = false;
+    void handle_error(bool use_errno);
+
 #ifdef ENABLE_EPOCH_LIMIT
     uint64_t last_epoch = 0;
     uint64_t epoch_read_bytes = 0;
