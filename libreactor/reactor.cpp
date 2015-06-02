@@ -57,7 +57,7 @@ Buffer FD::read(Buffer data) {
     #ifdef ENABLE_EPOCH_LIMIT
     epoch_read_bytes += ret;
     #endif
-    if(ret < 0) {
+    if(ret <= 0) { // zero byte read indicates shutdown
         if(errno != EAGAIN)
             handle_error(true);
 

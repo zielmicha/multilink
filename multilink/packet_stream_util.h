@@ -21,6 +21,8 @@ public:
     void send_with_offset(const Buffer data);
     bool is_send_ready();
     size_t get_send_offset() { return 0; }
+
+    void close() { stream->close(); stream = nullptr; }
 };
 
 class FreePacketStream: public FreeWriterPacketStream {
@@ -36,7 +38,6 @@ public:
                                                     size_t mtu = 8192);
 
     optional<Buffer> recv();
-    void close() { stream->close(); }
 };
 
 class LengthPacketStream: public FreeWriterPacketStream {

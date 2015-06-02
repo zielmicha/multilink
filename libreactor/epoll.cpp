@@ -42,7 +42,7 @@ bool EPoll::add(int fd) {
     struct epoll_event event;
     event.data.u64 = 0; // supress valgrind error
     event.data.fd = fd;
-    event.events = EPOLLIN | EPOLLOUT | EPOLLET;
+    event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLHUP | EPOLLERR | EPOLLET;
     int res = epoll_ctl(efd, EPOLL_CTL_ADD, fd, &event);
     return res != -1;
 }
@@ -90,7 +90,7 @@ EPollResult EPollIterator::operator*() const {
     int events = epoll.events[i].events;
     result.read_ready = events & EPOLLIN;
     result.write_ready = events & EPOLLOUT;
-    result.error = events & (EPOLLOUT | EPOLLHUP);
+    result.error = events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR);
     result.fd = epoll.events[i].data.fd;
     return result;
 }

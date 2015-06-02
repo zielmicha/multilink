@@ -36,6 +36,7 @@ class Transport : public std::enable_shared_from_this<Transport> {
 
     std::shared_ptr<PacketStream> network_stream;
     std::unordered_map<uint64_t, std::shared_ptr<ChildStream> > children;
+    std::deque<std::pair<uint64_t, uint64_t> > special_packet_queue;
     TargetCreator target_creator;
     size_t mtu;
 
@@ -51,6 +52,8 @@ class Transport : public std::enable_shared_from_this<Transport> {
     void target_error(std::shared_ptr<ChildStream> child);
 
     void place_packet(uint64_t id, uint64_t seq, Buffer data);
+    void send_special_packet();
+    void close_channel(uint64_t id);
 
     void network_send_ready();
     void network_recv_ready();

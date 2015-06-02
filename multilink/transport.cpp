@@ -8,8 +8,10 @@ const int MAX_BUFFER_PACKETS = 16 * 1024;
 //const int BUFFER_SIZE_LOW_MARK = 256 * 1024;
 //const int BUFFER_SIZE_HIGH_MARK = 512 * 1024;
 
-//const uint64_t CHOKE_CHANNEL = std::numeric_limits<uint64_t>::max();
-//const uint64_t UNCHOKE_CHANNEL = CHOKE_CHANNEL - 1;
+const uint64_t LAST_CHANNEL = std::numeric_limits<uint64_t>::max();
+//const uint64_t CHOKE_CHANNEL = LAST_CHANNEL;
+//const uint64_t UNCHOKE_CHANNEL = LAST_CHANNEL - 1;
+const uint64_t CLOSE_CHANNEL = LAST_CHANNEL - 2;
 
 std::shared_ptr<Transport> Transport::create(
     Reactor& reactor,
@@ -68,6 +70,10 @@ void Transport::add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > t
 
 void Transport::target_send_ready(std::shared_ptr<ChildStream> child) {
     DEBUG("target_send_ready");
+    if(!child->target) {
+        LOG("early return from target_send_ready - target closed");
+    }
+
     while(!child->buffer.empty() && !child->buffer.front().empty()) {
         if(child->target && child->target->is_send_ready()) {
             child->target->send(child->buffer.front().as_buffer());
@@ -111,7 +117,37 @@ bool Transport::target_recv_ready_once(std::shared_ptr<ChildStream> child) {
 }
 
 void Transport::target_error(std::shared_ptr<ChildStream> child) {
-    LOG("target closed");
+    LOG("target error");
+    special_packet_queue.push_back({CLOSE_CHANNEL, child->id});
+    send_special_packet();
+
+    child->target->close();
+    child->target = nullptr;
+}
+
+void Transport::close_channel(uint64_t id) {
+    auto child = get_child_stream(id);
+
+    LOG("close_channel " << id);
+
+    if(child->target) {
+        child->target->close();
+        child->target = nullptr;
+    }
+}
+
+void Transport::send_special_packet() {
+    if(!network_stream->is_send_ready()) return;
+
+    if(!special_packet_queue.empty()) {
+        auto packet = special_packet_queue.front();
+        StackBuffer<16> buffer;
+        Buffer(buffer).convert<uint64_t>(0) = packet.first;
+        Buffer(buffer).convert<uint64_t>(8) = packet.second;
+        special_packet_queue.pop_front();
+        network_stream->send(buffer);
+        LOG("special packet " << int64_t(packet.first) << " " << packet.second << " sent");
+    }
 }
 
 void Transport::network_recv_ready() {
@@ -121,7 +157,11 @@ void Transport::network_recv_ready() {
             uint64_t id = packet->convert<uint64_t>(0);
             uint64_t seq = packet->convert<uint64_t>(8);
 
-            place_packet(id, seq, packet->slice(16));
+            if(id == CLOSE_CHANNEL) {
+                close_channel(seq);
+            } else {
+                place_packet(id, seq, packet->slice(16));
+            }
         } else {
             return;
         }
@@ -170,6 +210,15 @@ void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
 void Transport::network_send_ready() {
     while(true) {
         bool anything = false;
+
+        if(!network_stream->is_send_ready()) return;
+
+        if(!special_packet_queue.empty()) {
+            anything = true;
+            send_special_packet();
+            continue;
+        }
+
         for(auto entry: children) {
             if(!network_stream->is_send_ready()) return;
 
