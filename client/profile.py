@@ -3,14 +3,17 @@ import select
 import time
 import json
 import sys
+import struct
 
 def profile_once(bind):
     s = socket.socket()
     start = time.time()
     s.bind((bind, 0))
     s.connect(('mlserwery', 9500))
+    begin_time = int(time.time() * 1000 * 1000)
+    s.sendall(struct.pack('<Q', begin_time))
 
-    data = []
+    values = []
     recv = 0
 
     while True:
@@ -19,12 +22,22 @@ def profile_once(bind):
             break
 
         r, w, x = select.select([s], [], [])
+
         if r:
-            recv += len(s.recv(4096))
+            data = s.recv(4096)
+            offset = recv % 8
+            real_data = data[offset:]
+            recv += len(data)
 
-        data.append((now, recv))
+            field_count = len(real_data) / 8
+            if field_count != 0:
+                transmit_time, = struct.unpack('<Q', real_data[field_count * 8 - 8:field_count * 8])
+                current_time = int(time.time() * 1000 * 1000)
+                delta = current_time - transmit_time
 
-    return data
+                values.append((now, recv, delta))
+
+    return values
 
 if __name__ == '__main__':
     n = int(sys.argv[2])
@@ -32,6 +45,6 @@ if __name__ == '__main__':
     bind = '0.0.0.0' if len(sys.argv) == 3 else sys.argv[3]
     for i in xrange(n):
         print 'Test', i
-        data = profile_once(bind)
-        out.write(json.dumps(data) + '\n')
+        values = profile_once(bind)
+        out.write(json.dumps(values) + '\n')
         out.flush()
