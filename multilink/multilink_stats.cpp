@@ -42,33 +42,61 @@ namespace Multilink {
         add(val);
     }
 
-    BandwidthEstimator::BandwidthEstimator():
-        stats(100) {
+    BandwidthEstimator::BandwidthEstimator()
+        : overall(100) {}
 
-    }
+    //const uint64_t BANDWIDTH_MEASURE_MIN_SIZE = 128;
+    const uint64_t BURST_TIMEOUT = 60 * 1000;
+    const int TRANSMIT_KEEP = 40;
 
     void BandwidthEstimator::data_written(uint64_t time, uint64_t bytes) {
-        if(transmit_size == 0) {
-            transmit_start = time;
+        if(burst_running || time < burst_ends_at) {
+            burst_ends_at = true;
+
+            transmitted.push_back({time, bytes});
+            transmit_size += bytes;
+
+            if(transmitted.size() > TRANSMIT_KEEP) {
+                transmit_size -= transmitted.front().second;
+                transmitted.pop_front();
+            }
+
+            if(transmitted.size() < TRANSMIT_KEEP) {
+                return;
+            }
+
+            uint64_t prev_trasmit = transmitted.front().first;
+            uint64_t delta = time - prev_trasmit;
+
+            overall.add_and_remove_back(transmit_size * 1000 / delta);
+
+            LOG("delta " << delta << " bytes " << transmit_size <<
+                " current " << bandwidth_mbps());
+        } else {
+            if(transmit_size != 0)
+                LOG("burst ended");
+            transmit_size = 0;
+            transmitted.clear();
         }
-        transmit_size += bytes;
     }
 
-    const uint64_t BANDWIDTH_MEASURE_MIN_SIZE = 128;
-
     void BandwidthEstimator::write_ready(uint64_t time) {
-        if(transmit_size < BANDWIDTH_MEASURE_MIN_SIZE)
-            return;
-        uint64_t delta = time - transmit_start;
-        if(delta == 0) delta = 1;
-        uint64_t bps = (transmit_size * MBPS_TO_BPS / delta);
-        //LOG("measure " << transmit_size << " " << delta << " " << (stats.mean() / MBPS_TO_BPS));
-        stats.add_and_remove_back(bps);
-        transmit_start = 0;
-        transmit_size = 0;
+    }
+
+    void BandwidthEstimator::output_queue_full(uint64_t time) {
+        LOG("output_queue_full");
+        burst_running = true;
+    }
+
+    void BandwidthEstimator::input_queue_empty(uint64_t time) {
+        LOG("input_queue_empty");
+        if(burst_running) {
+            burst_running = false;
+            burst_ends_at = time + BURST_TIMEOUT;
+        }
     }
 
     double BandwidthEstimator::bandwidth_mbps() {
-        return stats.mean() / MBPS_TO_BPS;
+        return overall.mean() / 1000;
     }
 }

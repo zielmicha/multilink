@@ -20,17 +20,23 @@ namespace Multilink {
         void add_and_remove_back(long long val);
         double mean();
         double stddev();
+        long long get_sum() { return sum; }
     };
 
     class BandwidthEstimator {
-        Stats stats;
-        uint64_t transmit_start = 0;
+        Stats overall;
+        std::deque<std::pair<uint64_t, uint64_t> > transmitted;
+
         uint64_t transmit_size = 0;
+        uint64_t burst_ends_at = 0;
+        bool burst_running = false;
 
     public:
         BandwidthEstimator();
         void data_written(uint64_t time, uint64_t bytes);
         void write_ready(uint64_t time);
+        void output_queue_full(uint64_t time);
+        void input_queue_empty(uint64_t time);
 
         double bandwidth_mbps();
     };

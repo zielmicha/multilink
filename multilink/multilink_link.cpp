@@ -5,7 +5,7 @@
 
 namespace Multilink {
     const size_t MTU = Multilink::LINK_MTU;
-    const uint64_t PING_INTERVAL = 1000 * 1000 * 4;
+    const uint64_t PING_INTERVAL = 1000 * 1000 * 1;
 
     Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
                                                   stream(stream),
@@ -75,6 +75,11 @@ namespace Multilink {
             bandwidth.write_ready(Timer::get_time());
 
         bandwidth.data_written(Timer::get_time(), bytes_written);
+
+        if(send_buffer_current.size != 0)
+            bandwidth.output_queue_full(Timer::get_time());
+        else if(bytes_written == 0)
+            bandwidth.input_queue_empty(Timer::get_time());
     }
 
     bool Link::send(uint64_t seq, Buffer data) {
