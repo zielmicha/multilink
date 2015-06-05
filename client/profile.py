@@ -54,3 +54,5 @@ if __name__ == '__main__':
         values = profile_once(bind)
         out.write(json.dumps(values) + '\n')
         out.flush()
+        print 'Sleeping after test...'
+        time.sleep(6)

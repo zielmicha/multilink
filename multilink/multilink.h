@@ -27,7 +27,6 @@ namespace Multilink {
 
         void assign_links_until(Link* link);
         void request_packets(Link* link);
-
     public:
         Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;

@@ -209,10 +209,14 @@ void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
 }
 
 void Transport::network_send_ready() {
+    DEBUG("network_send_ready");
     while(true) {
         bool anything = false;
 
-        if(!network_stream->is_send_ready()) return;
+        if(!network_stream->is_send_ready()) {
+            DEBUG("not longer send ready - exit");
+            return;
+        }
 
         if(!special_packet_queue.empty()) {
             anything = true;
@@ -226,6 +230,9 @@ void Transport::network_send_ready() {
             if(target_recv_ready_once(entry.second))
                 anything = true;
         }
-        if(!anything) return;
+        if(!anything) {
+            DEBUG("no stream has written anything - exit");
+            return;
+        }
     }
 }

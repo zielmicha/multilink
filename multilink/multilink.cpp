@@ -3,7 +3,7 @@
 #include "logging.h"
 
 namespace Multilink {
-    const int QUEUE_SIZE = 100;
+    const int QUEUE_SIZE = 40;
 
     Multilink::Multilink(Reactor& reactor): reactor(reactor) {
 
@@ -19,6 +19,7 @@ namespace Multilink {
         assert(queue.size() < QUEUE_SIZE);
         queue.push_back(AllocBuffer::copy(data));
         if(was_empty) {
+            LOG("queue was empty!");
             reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
         }
     }
@@ -32,7 +33,11 @@ namespace Multilink {
         shuffle_links();
         for(auto& link: links) {
             result = link->recv();
-            if(result) return result;
+            if(result) {
+                LOG("recv from " << (*link) << " " << (uint64_t)link->rtt.mean() << " id " << (result->convert<uint64_t>(8))
+                    << " channel " << (result->convert<uint64_t>(0)));
+                return result;
+            }
         }
         return result;
     }
@@ -58,9 +63,15 @@ namespace Multilink {
 
     void Multilink::link_send_ready(Link* link) {
         while(true) {
+            if(queue.size() < QUEUE_SIZE * 3 / 4) {
+                // queue not too full
+                on_send_ready();
+            }
+
             auto& own_queue = assigned_packets[link];
-            if(own_queue.size() == 0)
+            if(own_queue.size() == 0) {
                 request_packets(link);
+            }
 
             if(own_queue.size() == 0)
                 break;
@@ -74,11 +85,6 @@ namespace Multilink {
     }
 
     void Multilink::request_packets(Link* link) {
-        if(queue.size() < QUEUE_SIZE) {
-            // queue not too full
-            on_send_ready();
-        }
-
         if(queue.empty()) {
             DEBUG("multilink queue empty");
             return;
@@ -97,14 +103,30 @@ namespace Multilink {
     void Multilink::assign_links_until(Link* until) {
         if(links.empty()) return;
 
+        LOG("assign " << queue.size());
+
+        uint64_t max_time = 0;
+
         std::vector<uint64_t> estimated;
+        std::vector<uint64_t> num_assigned;
 
         for(size_t i = 0; i < links.size(); i ++) {
-            estimated.push_back(0) /* links[i].get_estimated_in_flight() */; // TODO
+            num_assigned.push_back(0);
+
+            uint64_t estimated_size = links[i]->get_estimated_in_flight();
+
+            LOG("estimated in flight " << estimated_size << " for " << *links[i]);
+
+            for(auto& pkt : assigned_packets[&*links[i]]) // TODO: O(1)
+                estimated_size += pkt.as_buffer().size;
+
+            estimated.push_back(estimated_size);
+            LOG("estimated size " << estimated_size << " for " << *links[i]);
         }
 
         auto key = [&](int i) -> uint64_t {
-            uint64_t ret = links[i]->rtt.mean() +
+            const int WEIGHT = 2;
+            uint64_t ret = links[i]->rtt.mean() * WEIGHT +
             estimated[i] / links[i]->bandwidth.bandwidth_mbps();
             DEBUG(*links[i] << " -> " << ret);
             return ret;
@@ -120,7 +142,13 @@ namespace Multilink {
 
         std::make_heap(L.begin(), L.end(), cmp);
 
-        while(!queue.empty()) {
+        int drain_to;
+        if(queue.size() < QUEUE_SIZE * 2 / 3)
+            drain_to = 0;
+        else
+            drain_to = queue.size() / 2;
+
+        while(queue.size() > drain_to) {
             AllocBuffer packet {std::move(queue.front())};
             queue.pop_front();
             size_t packet_size = packet.as_buffer().size;
@@ -133,12 +161,20 @@ namespace Multilink {
             DEBUG("assign to " << *links[link]);
 
             estimated[link] += packet_size;
+            max_time = std::max(max_time, key(link));
+
+            num_assigned[link] ++;
             assigned_packets[link_ptr].push_back(std::move(packet));
 
             //if(link_ptr == until)
             //    break;
 
             std::push_heap(L.begin(), L.end(), cmp);
+        }
+
+        LOG("assigned max time " << max_time);
+        for(size_t i = 0; i < links.size(); i ++) {
+            LOG("assigned " << num_assigned[i] << " to " << *links[i]);
         }
     }
 }

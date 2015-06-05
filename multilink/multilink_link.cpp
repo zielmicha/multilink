@@ -5,7 +5,7 @@
 
 namespace Multilink {
     const size_t MTU = Multilink::LINK_MTU;
-    const uint64_t PING_INTERVAL = 1000 * 1000 / 2;
+    const uint64_t PING_INTERVAL = 1000 * 1000 / 4;
 
     Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
                                                   stream(stream),
@@ -15,7 +15,7 @@ namespace Multilink {
                                                   waiting_recv_packet_buffer(MTU),
                                                   send_buffer(MTU),
                                                   send_buffer_current(NULL, 0),
-                                                  rtt(5) {
+                                                  rtt(1) {
         stream->set_on_read_ready(std::bind(&Link::transport_read_ready, this));
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this, true));
         reactor.schedule(std::bind(&Link::timer_callback, this));
@@ -89,10 +89,23 @@ namespace Multilink {
             assert(seq > last_seq_sent);
             last_seq_sent = seq;
             raw_send_packet(0, data);
+
+            in_flight_bytes += data.size;
+            in_flight_queue.push_back({Timer::get_time(), data.size});
+
             return true;
         } else {
             return false;
         }
+    }
+
+    uint64_t Link::get_estimated_in_flight() {
+        uint64_t last_sent = Timer::get_time() - rtt.mean() / 2; // packets sent before this moment have alredy arrived
+        while(!in_flight_queue.empty() && in_flight_queue.front().first < last_sent) {
+            in_flight_bytes -= in_flight_queue.front().second;
+            in_flight_queue.pop_front();
+        }
+        return in_flight_bytes;
     }
 
     bool Link::send_aux() {

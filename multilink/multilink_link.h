@@ -63,6 +63,9 @@ namespace Multilink {
         void raw_send_packet(uint8_t type, Buffer data);
 
         std::function<void()> on_send_ready_edge_fn;
+
+        uint64_t in_flight_bytes = 0;
+        std::deque<std::pair<uint64_t, uint64_t> > in_flight_queue;
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();
@@ -74,6 +77,8 @@ namespace Multilink {
         BandwidthEstimator bandwidth;
 
         void display(std::ostream& stream) const;
+
+        uint64_t get_estimated_in_flight();
 
         optional<Buffer> recv(); // return value is valid only until next cycle
         bool send(uint64_t seq, const Buffer data);
