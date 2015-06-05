@@ -5,8 +5,7 @@
 namespace Multilink {
     const int QUEUE_SIZE = MULTILINK_MTU * 100;
 
-    Multilink::Multilink(Reactor& reactor): reactor(reactor),
-                                            queue(QUEUE_SIZE, MULTILINK_MTU) {
+    Multilink::Multilink(Reactor& reactor): reactor(reactor) {
 
     }
 
@@ -17,15 +16,15 @@ namespace Multilink {
     void Multilink::send_with_offset(const Buffer data) {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
-        bool pushed = queue.push_back(data);
-        assert(pushed);
+        assert(queue.size() < QUEUE_SIZE);
+        queue.push_back(AllocBuffer::copy(data));
         if(was_empty) {
             reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
         }
     }
 
     bool Multilink::is_send_ready() {
-        return !queue.is_full();
+        return queue.size() < QUEUE_SIZE;
     }
 
     optional<Buffer> Multilink::recv() {
@@ -59,21 +58,33 @@ namespace Multilink {
 
     void Multilink::link_send_ready(Link* link) {
         while(true) {
-            if(queue.packet_count() < queue.max_count) {
-                // queue not too full
-                on_send_ready();
-            }
-            if(queue.empty()) {
-                DEBUG("multilink queue empty");
-                break;
-            }
+            auto& own_queue = assigned_packets[link];
+            if(own_queue.size() == 0)
+                request_packets(link);
 
-            if(link->send(++last_seq, queue.front())) {
+            if(own_queue.size() == 0)
+                break;
+
+            if(link->send(++last_seq, own_queue.front().as_buffer())) {
                 queue.pop_front();
             } else {
                 break;
             }
         }
+    }
+
+    void Multilink::request_packets(Link* link) {
+        if(queue.size() < QUEUE_SIZE) {
+            // queue not too full
+            on_send_ready();
+        }
+
+        if(queue.empty()) {
+            DEBUG("multilink queue empty");
+            return;
+        }
+
+        assign_links_until(link);
     }
 
     void Multilink::some_link_send_ready() {
@@ -84,6 +95,8 @@ namespace Multilink {
     }
 
     void Multilink::assign_links_until(Link* until) {
+        if(links.empty()) return;
+
         std::vector<uint64_t> estimated;
 
         for(size_t i = 0; i < links.size(); i ++) {
@@ -105,14 +118,23 @@ namespace Multilink {
 
         std::make_heap(L.begin(), L.end(), cmp);
 
-        for(size_t j = 0; j < queue.packet_count(); j ++) {
-            size_t packet_size = queue.size_of(j);
+        while(!queue.empty()) {
+            AllocBuffer packet {std::move(queue.front())};
+            queue.pop_front();
+            size_t packet_size = packet.as_buffer().size;
+
             int link = *L.begin();
+            Link* link_ptr = &*(links[link]);
 
             std::pop_heap(L.begin(), L.end(), cmp);
 
-            LOG("assign " << j << " to " << *links[link]);
+            LOG("assign to " << *links[link]);
+
             estimated[link] += packet_size;
+            assigned_packets[link_ptr].push_back(std::move(packet));
+
+            if(link_ptr == until)
+                break;
 
             std::push_heap(L.begin(), L.end(), cmp);
         }

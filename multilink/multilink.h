@@ -14,8 +14,8 @@ namespace Multilink {
 
         std::vector<std::unique_ptr<Link> > links;
 
-        PacketQueue queue;
-        std::deque<Link*> assigned_links;
+        std::deque<AllocBuffer> queue;
+        std::unordered_map<Link*, std::deque<AllocBuffer> > assigned_packets;
 
         uint64_t last_seq = 0; // TODO
 
@@ -26,6 +26,7 @@ namespace Multilink {
         void shuffle_links();
 
         void assign_links_until(Link* link);
+        void request_packets(Link* link);
 
     public:
         Multilink(Reactor& reactor);
