@@ -189,7 +189,8 @@ void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
     // TODO: check if MAX_QUEUE_SIZE is not exceeded
     // TODO: choke/unchoke
 
-    if((int)child->buffer.size() < rel_seq + 1) {
+    if(((int)child->buffer.size()) < rel_seq + 1) {
+        LOG("resize to " << rel_seq + 1);
         child->buffer.resize(rel_seq + 1);
     }
 

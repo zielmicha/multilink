@@ -66,7 +66,7 @@ namespace Multilink {
                 break;
 
             if(link->send(++last_seq, own_queue.front().as_buffer())) {
-                queue.pop_front();
+                own_queue.pop_front();
             } else {
                 break;
             }
@@ -100,16 +100,18 @@ namespace Multilink {
         std::vector<uint64_t> estimated;
 
         for(size_t i = 0; i < links.size(); i ++) {
-            estimated[i] = 0 /* links[i].get_estimated_in_flight() */; // TODO
+            estimated.push_back(0) /* links[i].get_estimated_in_flight() */; // TODO
         }
 
         auto key = [&](int i) -> uint64_t {
-            return links[i]->rtt.mean() +
+            uint64_t ret = links[i]->rtt.mean() +
             estimated[i] / links[i]->bandwidth.bandwidth_mbps();
+            DEBUG(*links[i] << " -> " << ret);
+            return ret;
         };
 
         auto cmp = [&](int i, int j) -> bool {
-            return key(i) < key(j);
+            return key(i) > key(j);
         };
 
         std::vector<int> L;

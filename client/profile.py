@@ -9,7 +9,7 @@ def profile_once(bind):
     s = socket.socket()
     start = time.time()
     s.bind((bind, 0))
-    s.connect(('mlserwery', 9500))
+    s.connect(('77.55.252.125', 9500))
     begin_time = int(time.time() * 1000 * 1000)
     s.sendall(struct.pack('<Q', begin_time))
 

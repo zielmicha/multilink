@@ -97,6 +97,6 @@ namespace Multilink {
     }
 
     double BandwidthEstimator::bandwidth_mbps() {
-        return overall.mean() / 1000;
+        return std::max(overall.mean() / 1000, 0.1); // TODO
     }
 }
