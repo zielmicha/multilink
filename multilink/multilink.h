@@ -15,6 +15,8 @@ namespace Multilink {
         std::vector<std::unique_ptr<Link> > links;
 
         PacketQueue queue;
+        std::deque<Link*> assigned_links;
+
         uint64_t last_seq = 0; // TODO
 
         void link_recv_ready(Link* link);
@@ -22,6 +24,8 @@ namespace Multilink {
         void some_link_send_ready();
 
         void shuffle_links();
+
+        void assign_links_until(Link* link);
 
     public:
         Multilink(Reactor& reactor);

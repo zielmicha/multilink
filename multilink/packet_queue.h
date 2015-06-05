@@ -14,6 +14,7 @@ public:
     Buffer front();
     void pop_front();
     int packet_count() { return queue.size(); }
+    size_t size_of(int i) { return queue[i].as_buffer().size; }
 
     bool push_back(const Buffer data);
     bool empty() { return queue.empty();  }

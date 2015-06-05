@@ -82,4 +82,39 @@ namespace Multilink {
             link_send_ready(&*link);
         }
     }
+
+    void Multilink::assign_links_until(Link* until) {
+        std::vector<uint64_t> estimated;
+
+        for(size_t i = 0; i < links.size(); i ++) {
+            estimated[i] = 0 /* links[i].get_estimated_in_flight() */; // TODO
+        }
+
+        auto key = [&](int i) -> uint64_t {
+            return links[i]->rtt.mean() +
+            estimated[i] / links[i]->bandwidth.bandwidth_mbps();
+        };
+
+        auto cmp = [&](int i, int j) -> bool {
+            return key(i) < key(j);
+        };
+
+        std::vector<int> L;
+        for(size_t i = 0; i < links.size(); i ++)
+            L.push_back(i);
+
+        std::make_heap(L.begin(), L.end(), cmp);
+
+        for(size_t j = 0; j < queue.packet_count(); j ++) {
+            size_t packet_size = queue.size_of(j);
+            int link = *L.begin();
+
+            std::pop_heap(L.begin(), L.end(), cmp);
+
+            LOG("assign " << j << " to " << *links[link]);
+            estimated[link] += packet_size;
+
+            std::push_heap(L.begin(), L.end(), cmp);
+        }
+    }
 }
