@@ -5,7 +5,7 @@
 
 namespace Multilink {
     const size_t MTU = Multilink::LINK_MTU;
-    const uint64_t PING_INTERVAL = 1000 * 1000 * 1;
+    const uint64_t PING_INTERVAL = 1000 * 1000 / 2;
 
     Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
                                                   stream(stream),
@@ -14,7 +14,8 @@ namespace Multilink {
                                                   recv_buffer(recv_buffer_alloc.as_buffer()),
                                                   waiting_recv_packet_buffer(MTU),
                                                   send_buffer(MTU),
-                                                  send_buffer_current(NULL, 0) {
+                                                  send_buffer_current(NULL, 0),
+                                                  rtt(5) {
         stream->set_on_read_ready(std::bind(&Link::transport_read_ready, this));
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this, true));
         reactor.schedule(std::bind(&Link::timer_callback, this));

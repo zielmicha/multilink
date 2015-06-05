@@ -3,7 +3,7 @@
 #include "logging.h"
 
 namespace Multilink {
-    const int QUEUE_SIZE = MULTILINK_MTU * 100;
+    const int QUEUE_SIZE = 100;
 
     Multilink::Multilink(Reactor& reactor): reactor(reactor) {
 
@@ -130,13 +130,13 @@ namespace Multilink {
 
             std::pop_heap(L.begin(), L.end(), cmp);
 
-            LOG("assign to " << *links[link]);
+            DEBUG("assign to " << *links[link]);
 
             estimated[link] += packet_size;
             assigned_packets[link_ptr].push_back(std::move(packet));
 
-            if(link_ptr == until)
-                break;
+            //if(link_ptr == until)
+            //    break;
 
             std::push_heap(L.begin(), L.end(), cmp);
         }

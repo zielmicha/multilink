@@ -5,4 +5,4 @@ if [ "$1" = "" ]; then
     exit 1
 fi
 ninja -C ../build
-rsync -v ../build/app *.py "$1":mbuild/
+rsync --progress -v ../build/app *.py "$1":mbuild/

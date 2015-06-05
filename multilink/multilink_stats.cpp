@@ -43,11 +43,11 @@ namespace Multilink {
     }
 
     BandwidthEstimator::BandwidthEstimator()
-        : overall(100) {}
+        : overall(1000) {}
 
     //const uint64_t BANDWIDTH_MEASURE_MIN_SIZE = 128;
     const uint64_t BURST_TIMEOUT = 60 * 1000;
-    const int TRANSMIT_KEEP = 40;
+    const int TRANSMIT_KEEP = 400;
 
     void BandwidthEstimator::data_written(uint64_t time, uint64_t bytes) {
         if(burst_running || time < burst_ends_at) {
@@ -70,8 +70,8 @@ namespace Multilink {
 
             overall.add_and_remove_back(transmit_size * 1000 / delta);
 
-            LOG("delta " << delta << " bytes " << transmit_size <<
-                " current " << bandwidth_mbps());
+            DEBUG("delta " << delta << " bytes " << transmit_size <<
+                  " current " << bandwidth_mbps());
         } else {
             if(transmit_size != 0)
                 LOG("burst ended");
@@ -89,7 +89,7 @@ namespace Multilink {
     }
 
     void BandwidthEstimator::input_queue_empty(uint64_t time) {
-        LOG("input_queue_empty");
+        DEBUG("input_queue_empty");
         if(burst_running) {
             burst_running = false;
             burst_ends_at = time + BURST_TIMEOUT;

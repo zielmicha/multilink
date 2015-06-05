@@ -15,6 +15,7 @@ def profile_once(bind):
 
     values = []
     recv = 0
+    last_info = 0
 
     while True:
         now = time.time() - start
@@ -36,6 +37,11 @@ def profile_once(bind):
                 delta = current_time - transmit_time
 
                 values.append((now, recv, delta))
+
+                current_time = time.time()
+                if current_time - last_info > 1:
+                    last_info = current_time
+                    print 'Latency %d ms Recv %d MB' % (delta / 1000, recv / 1024 / 1024)
 
     return values
 
