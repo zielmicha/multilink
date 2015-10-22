@@ -5,11 +5,11 @@ import json
 import sys
 import struct
 
-def profile_once(bind):
+def profile_once(bind, conn):
     s = socket.socket()
     start = time.time()
     s.bind((bind, 0))
-    s.connect(('77.55.252.125', 9500))
+    s.connect((conn, 9500))
     begin_time = int(time.time() * 1000 * 1000)
     s.sendall(struct.pack('<Q', begin_time))
 
@@ -19,7 +19,7 @@ def profile_once(bind):
 
     while True:
         now = time.time() - start
-        if now > 20:
+        if now > 60:
             break
 
         r, w, x = select.select([s], [], [])
@@ -48,10 +48,11 @@ def profile_once(bind):
 if __name__ == '__main__':
     n = int(sys.argv[2])
     out = open(sys.argv[1], 'w')
-    bind = '0.0.0.0' if len(sys.argv) == 3 else sys.argv[3]
+    bind = '0.0.0.0' if len(sys.argv) <= 3 else sys.argv[3]
+    conn = '127.0.0.1' if len(sys.argv) <= 4 else sys.argv[4]
     for i in xrange(n):
         print 'Test', i
-        values = profile_once(bind)
+        values = profile_once(bind, conn)
         out.write(json.dumps(values) + '\n')
         out.flush()
         print 'Sleeping after test...'

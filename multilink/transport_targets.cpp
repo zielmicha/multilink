@@ -2,10 +2,12 @@
 #include "packet_stream_util.h"
 #define LOG_NAME "transport_targets"
 #include "logging.h"
+#include "misc.h"
 
 TargetCreator create_connecting_tcp_target_creator(Reactor& reactor, std::string host, int port) {
     return [host, port, &reactor](uint64_t id) -> Future<std::shared_ptr<PacketStream> > {
         return TCP::connect(reactor, host, port).then<std::shared_ptr<PacketStream> >([&reactor](FD* fd) -> std::shared_ptr<PacketStream> {
+            set_recv_buffer(fd, 1024 * 32); // FIXME: possibly remove this
             return FreePacketStream::create(reactor, fd);
         });
     };
