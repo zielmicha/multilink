@@ -26,8 +26,9 @@ int main() {
                 char data[2000];
                 memset(data, 0, sizeof(data));
                 Buffer pak {data, sizeof(data)};
+                auto pak_buf = AllocBuffer::copy(pak);
 
-                if(a.send(counter, pak)) {
+                if(a.send(counter, pak_buf)) {
                     counter ++;
                 }
             }

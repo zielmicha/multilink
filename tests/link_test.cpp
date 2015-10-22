@@ -23,8 +23,9 @@ int main() {
                 Buffer pak {data, 7};
                 //pak.convert<uint8_t>(0) = counter;
                 pak.data[0] = counter;
+                auto pak_buf = AllocBuffer::copy(pak);
 
-                if(a.send(1000000 - counter, pak)) {
+                if(a.send(1000000 - counter, pak_buf)) {
                     counter --;
                 }
             }

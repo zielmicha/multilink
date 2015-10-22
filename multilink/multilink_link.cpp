@@ -35,7 +35,23 @@ namespace Multilink {
     void Link::timer_callback() {
         // Make sure pings are sent even when there is no other traffic.
         send_aux();
+        // Maybe retransmit packets?
+        maybe_retransmit();
+        // Run again
         timer.once(PING_INTERVAL, std::bind(&Link::timer_callback, this));
+    }
+
+    void Link::maybe_retransmit() {
+        // Retransmit packets that haven't been acknowledged for more than few seconds.
+        // TODO: replace with something that makes more sense (retramission timeout
+        // based on RTTs)
+        const int RETRANSMISSION_TIMEOUT = 2000;
+
+        uint64_t first_send_time = in_flight_queue.front().transmit_time;
+        if (Timer::get_time() - first_send_time > RETRANSMISSION_TIMEOUT) {
+            // TODO
+            LOG("TIMEOUT");
+        }
     }
 
     void Link::transport_write_ready(bool real) {
@@ -66,7 +82,6 @@ namespace Multilink {
                     DEBUG(*this << " transport_write_ready output full real:" << real);
                     goto finish;
                 }
-
                 send_buffer_current = send_buffer_current.slice(bytes);
             }
         }
@@ -83,15 +98,15 @@ namespace Multilink {
             bandwidth.input_queue_empty(Timer::get_time());
     }
 
-    bool Link::send(uint64_t seq, Buffer data) {
+    bool Link::send(uint64_t seq, AllocBuffer& data) {
         DEBUG(*this << " attempt to send " << data.size);
         if(!send_aux()) {
             assert(seq > last_seq_sent);
             last_seq_sent = seq;
-            raw_send_packet(0, data);
+            raw_send_packet(0, data.as_buffer());
 
             in_flight_bytes += data.size;
-            in_flight_queue.push_back({Timer::get_time(), data.size});
+            in_flight_queue.push_back({seq, std::move(data), Timer::get_time()});
 
             return true;
         } else {
@@ -100,11 +115,6 @@ namespace Multilink {
     }
 
     uint64_t Link::get_estimated_in_flight() {
-        uint64_t last_sent = Timer::get_time() - rtt.mean() / 2; // packets sent before this moment have alredy arrived
-        while(!in_flight_queue.empty() && in_flight_queue.front().first < last_sent) {
-            in_flight_bytes -= in_flight_queue.front().second;
-            in_flight_queue.pop_front();
-        }
         return in_flight_bytes;
     }
 
@@ -200,7 +210,7 @@ namespace Multilink {
                 // packet is ready
                 parse_recv_packet(recv_buffer.slice(0, expected_length));
                 recv_buffer.slice(0, recv_buffer_pos).delete_start(
-                    expected_length, recv_buffer_pos);
+                                                                   expected_length, recv_buffer_pos);
                 recv_buffer_pos -= expected_length;
                 return true;
             }
@@ -232,8 +242,22 @@ namespace Multilink {
                 " pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
                 << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
+            last_pong_recv_time = Timer::get_time();
+
+            flush_in_flight_queue();
         } else {
             LOG("unknown packet received: " << data);
+        }
+    }
+
+    void Link::flush_in_flight_queue() {
+        while(!in_flight_queue.empty()) {
+            if(in_flight_queue.front().seq <= get_last_ack_seq()) {
+                in_flight_bytes -= in_flight_queue.front().buffer.size;
+                in_flight_queue.pop_front();
+            } else {
+                break;
+            }
         }
     }
 

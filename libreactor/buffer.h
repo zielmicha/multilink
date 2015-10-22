@@ -91,9 +91,10 @@ public:
 };
 
 class AllocBuffer {
+public:
     size_t size;
     char* data;
-public:
+
     AllocBuffer(size_t size);
     AllocBuffer();
     ~AllocBuffer();

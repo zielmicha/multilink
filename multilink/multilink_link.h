@@ -13,17 +13,6 @@ namespace Multilink {
     const size_t HEADER_SIZE = 3;
     const size_t MULTILINK_MTU = LINK_MTU - HEADER_SIZE;
 
-    struct ChannelInfo {
-        uint8_t type;
-        uint64_t id;
-
-        enum {
-            TYPE_COMMON = 0x01,
-            TYPE_TCP = 0x02,
-            TYPE_RAW = 0x81,
-        };
-    };
-
     class Link {
     private:
         Reactor& reactor;
@@ -46,6 +35,7 @@ namespace Multilink {
         uint64_t last_pong_request_seq = 0;
         uint64_t last_seq_sent = 0;
         uint64_t last_pong_recv_seq = 0;
+        uint64_t last_pong_recv_time = 0;
 
         void timer_callback();
         void transport_write_ready(bool real=false);
@@ -53,6 +43,9 @@ namespace Multilink {
 
         bool try_parse_recv_packet();
         void parse_recv_packet(Buffer data);
+
+        void flush_in_flight_queue();
+        void maybe_retransmit();
 
         bool should_ping();
         void send_ping();
@@ -65,7 +58,15 @@ namespace Multilink {
         std::function<void()> on_send_ready_edge_fn;
 
         uint64_t in_flight_bytes = 0;
-        std::deque<std::pair<uint64_t, uint64_t> > in_flight_queue;
+        struct InFlightPacket {
+            InFlightPacket(uint64_t seq, AllocBuffer&& buffer, uint64_t transmit_time)
+            : seq(seq), buffer(std::move(buffer)), transmit_time(transmit_time) {}
+            uint64_t seq;
+            AllocBuffer buffer;
+            uint64_t transmit_time;
+        };
+        std::deque<InFlightPacket> in_flight_queue;
+
     public:
         Link(Reactor& reactor, Stream* stream);
         ~Link();
@@ -81,8 +82,9 @@ namespace Multilink {
         uint64_t get_estimated_in_flight();
 
         optional<Buffer> recv(); // return value is valid only until next cycle
-        bool send(uint64_t seq, const Buffer data);
+        bool send(uint64_t seq, AllocBuffer& data);
         uint64_t get_last_ack_seq() { return last_pong_recv_seq; };
+        uint64_t get_last_pong_time() { return last_pong_recv_time; }
 
         std::function<void()> on_recv_ready;
         std::function<void()> on_send_ready;

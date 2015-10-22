@@ -16,7 +16,7 @@ namespace Multilink {
     void Multilink::send_with_offset(const Buffer data) {
         assert(data.size <= MULTILINK_MTU);
         bool was_empty = queue.empty();
-        assert(queue.size() < QUEUE_SIZE);
+        assert(queue.size() < QUEUE_SIZE); // TODO
         queue.push_back(AllocBuffer::copy(data));
         if(was_empty) {
             LOG("queue was empty!");
@@ -76,7 +76,7 @@ namespace Multilink {
             if(own_queue.size() == 0)
                 break;
 
-            if(link->send(++last_seq, own_queue.front().as_buffer())) {
+            if(link->send(++last_seq, own_queue.front())) {
                 own_queue.pop_front();
             } else {
                 break;
@@ -101,6 +101,10 @@ namespace Multilink {
     }
 
     void Multilink::assign_links_until(Link* until) {
+        /**
+         * Assign packets to links (at least) until there is a packet
+         * assigned to link `until`.
+         */
         if(links.empty()) return;
 
         LOG("assign " << queue.size());
