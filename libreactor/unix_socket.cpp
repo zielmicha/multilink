@@ -16,14 +16,18 @@ namespace UnixSocket {
         int sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
 
-        FD* fd = &reactor.take_fd(sockfd);
-
         memset(&servaddr, 0, sizeof(servaddr));
         servaddr.sun_family = AF_UNIX;
         strncpy(servaddr.sun_path, path.c_str(), sizeof(servaddr.sun_path)-1);
 
         if(bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
             errno_to_exception();
+
+        return listen_on_fd(reactor, sockfd, accept_cb);
+    }
+
+    void listen_on_fd(Reactor& reactor, int sockfd, std::function<void(FD*)> accept_cb) {
+        FD* fd = &reactor.take_fd(sockfd);
 
         if(::listen(sockfd, SOMAXCONN) < 0)
             errno_to_exception();

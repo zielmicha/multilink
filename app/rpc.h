@@ -30,6 +30,10 @@ public:
         std::string path,
         OnMessageCallback on_message);
 
+    static std::shared_ptr<RPCServer> create(
+        Reactor& reactor,
+        int fd,
+        OnMessageCallback on_message);
 };
 
 class RPCStream {

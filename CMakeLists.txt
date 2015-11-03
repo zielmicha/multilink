@@ -42,8 +42,11 @@ add_library(multilink STATIC
 
 include(tests/CMakeLists.txt)
 
-add_executable(app
+add_library(appremote STATIC
   app/app.cpp
   app/rpc.cpp)
 
-target_link_libraries(app multilink reactor json11)
+add_executable(app
+  app/main.cpp)
+
+target_link_libraries(app appremote multilink reactor json11)

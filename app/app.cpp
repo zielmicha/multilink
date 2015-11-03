@@ -58,6 +58,13 @@ public:
             });
         };
 
+        ops["register-fd"] = [&]() {
+            int fd = message["fd"].int_value();
+            int num = message["num"].int_value();
+            // register FD already open in this process
+            unused_stream_fds[num] = &reactor.take_fd(fd);
+        };
+
         ops["multilink"] = [&]() {
             int num = message["num"].int_value();
             int stream_fd = message["stream_fd"].int_value();
@@ -127,9 +134,7 @@ public:
     }
 };
 
-int main(int argc, char** args) {
-    setup_crash_handlers();
-
+extern "C" void app_main(int length, const char* path) {
     Reactor reactor;
 
     Server server {reactor};
@@ -137,8 +142,12 @@ int main(int argc, char** args) {
                         Json message) {
         server.callback(stream, message);
     };
-    auto rpcserver = RPCServer::create(reactor, argc == 2 ? args[1] : "app.sock",
-                                       callback);
+    std::shared_ptr<RPCServer> rpcserver;
+    if (path[0] == '&') {
+        rpcserver = RPCServer::create(reactor, atoi(path + 1), callback);
+    } else {
+        rpcserver = RPCServer::create(reactor, std::string(path, length), callback);
+    }
 
     reactor.run();
 }
