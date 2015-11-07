@@ -23,14 +23,14 @@ namespace UnixSocket {
         if(bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
             errno_to_exception();
 
+        if(::listen(sockfd, SOMAXCONN) < 0)
+            errno_to_exception();
+
         return listen_on_fd(reactor, sockfd, accept_cb);
     }
 
     void listen_on_fd(Reactor& reactor, int sockfd, std::function<void(FD*)> accept_cb) {
         FD* fd = &reactor.take_fd(sockfd);
-
-        if(::listen(sockfd, SOMAXCONN) < 0)
-            errno_to_exception();
 
         fd->on_read_ready = [&reactor, fd, sockfd, accept_cb]() {
             while(true) {

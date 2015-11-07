@@ -1,27 +1,26 @@
-import json, net, commonnim, future, posix, os
+import mlcppthread, json
 
-proc app_main(length: cint, path: cstring) {.importc.}
+type
+  App = ref object
+    serverSock: MulitlinkSocket
 
-proc runMultilink(path: string) {.thread.} =
-  app_main(path.len.cint, path)
+proc loop(app: App) =
+  let mySock = app.serverSock.connect()
+  # TOOD: mySock.writeMessage(%*{"type": "wait-for-reconnects"})
+  while true:
+    let msg = mySock.readMessage()
 
-proc main() =
-  var fds: array[2, cint]
-  if socketpair(posix.AF_UNIX, posix.SOCK_STREAM, 0, fds) < 0:
-    raiseOSError(osLastError())
+proc addClientLink(app: App, listenAddr: string) =
+  nil
 
-  var thread: Thread[string]
-  thread.createThread(runMultilink, "&" & $fds[0])
-  thread.joinThread()
+proc addLinkFd(app: App, fd: int) =
+  let sock = app.serverSock.connect()
+  sock.writeMessage(%*{"type": ""})
 
-proc readMessage(sock: Socket): JsonNode =
-  var size: uint32
-  if sock.recv(addr size, sizeof size) != sizeof size:
-    raise newException(IOError, "EOF")
-  var data: string
-  if sock.recv(data, size.int) != size.int:
-    raise newException(IOError, "EOF")
-  return parseJson(data)
+proc main(app: App) =
+  app.serverSock = startMultilink()
+  app.loop()
 
 when isMainModule:
-  main()
+  var app = new(App)
+  app.main()

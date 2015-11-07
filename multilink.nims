@@ -11,4 +11,6 @@ task build, "build the app":
    switch "nimcache", "../build/nimcache"
    switch "threads", "on"
    switch "passl", "-L../build -lappremote -lmultilink -lreactor -ljson11 -lstdc++ -lm"
+   switch "verbosity", "0"
+   switch "debugger", "native"
    setCommand "c", "mlapp"
