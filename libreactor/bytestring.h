@@ -1,4 +1,5 @@
 #ifndef BYTESTRING_H_
+#define BYTESTRING_H_
 #include <memory>
 #include "buffer.h"
 

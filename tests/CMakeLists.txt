@@ -7,6 +7,9 @@ target_link_libraries(ProcessTest reactor)
 add_executable(TCPTest tests/tcp_test.cpp)
 target_link_libraries(TCPTest reactor)
 
+add_executable(TlsTest tests/tls_test.cpp)
+target_link_libraries(TlsTest reactor_tls reactor crypto ssl)
+
 add_executable(TimerTest tests/timer_test.cpp)
 target_link_libraries(TimerTest reactor)
 

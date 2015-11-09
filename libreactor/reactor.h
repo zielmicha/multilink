@@ -26,7 +26,6 @@ public:
     void set_on_write_ready_and_schedule(Reactor& r, std::function<void()> f);
 };
 
-// There must be a better way...
 #define STREAM_FIELDS                                   \
     std::function<void()> on_read_ready;                \
     std::function<void()> on_write_ready;               \
@@ -41,6 +40,11 @@ public:
     void set_on_error(std::function<void()> f) {        \
         on_error = f;                                   \
     }
+
+class AbstractStream: public Stream {
+public:
+    STREAM_FIELDS
+};
 
 class FD: public Stream {
 private:

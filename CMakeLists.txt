@@ -28,12 +28,15 @@ add_library(reactor STATIC
   libreactor/throttled.cpp
   libreactor/unix_socket.cpp
   libreactor/ioutil.cpp
-  libreactor/bytestring.cpp)
+  libreactor/bytestring.cpp
+  libreactor/packet_stream_util.cpp)
+
+add_library(reactor_tls STATIC
+  libreactor/tls.cpp)
 
 add_library(multilink STATIC
   multilink/multilink.cpp
   multilink/packet_queue.cpp
-  multilink/packet_stream_util.cpp
   multilink/write_queue.cpp
   multilink/transport.cpp
   multilink/transport_targets.cpp
@@ -47,3 +50,8 @@ add_executable(app
   app/rpc.cpp)
 
 target_link_libraries(app multilink reactor json11)
+
+add_executable(multilink_client
+  app/client.cpp)
+
+target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl)
