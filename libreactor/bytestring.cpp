@@ -15,6 +15,10 @@ ByteString ByteString::copy_from(const Buffer buffer) {
     return s;
 }
 
+ByteString ByteString::copy_from(const std::string& s) {
+    return copy_from(Buffer(const_cast<char*>(s.data()), s.size()));
+}
+
 ByteString::ByteString(const ByteString& other) {
     data = other.data;
 }

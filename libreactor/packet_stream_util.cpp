@@ -111,8 +111,12 @@ optional<Buffer> LengthPacketStream::recv() {
     // FIXME: copy
     if(recv_buffer_pos >= 4) {
         uint32_t expected_size = recv_buffer.as_buffer().convert<uint32_t>(0);
-        assert(expected_size <= MTU);
-        if(recv_buffer_pos >= expected_size + 4) {
+        if (expected_size <= MTU) {
+            LOG("LengthPacketStream received too large packet (" << expected_size
+                << ")");
+            on_error();
+        }
+        if (recv_buffer_pos >= expected_size + 4) {
             recv_buffer.as_buffer().slice(4, expected_size).copy_to(
                 recv_caller_buffer.as_buffer());
             recv_buffer.as_buffer().delete_start(expected_size + 4, recv_buffer_pos);
@@ -137,10 +141,12 @@ void LengthPacketStream::send(const Buffer data) {
 
 // ----- Piping -----
 
+namespace packetutil {
 void pipe(Reactor& reactor,
           std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
           size_t mtu) {
     Piper::create(reactor, in, out, mtu);
+}
 }
 
 Piper::Piper(Reactor& reactor,

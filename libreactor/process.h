@@ -10,6 +10,8 @@
 
 class Process;
 
+typedef std::shared_ptr<Process> ProcessPtr;
+
 class ProcessFile {
 public:
     enum Type {
@@ -39,7 +41,7 @@ public:
     Popen(Reactor& reactor, std::string executable);
     Popen(Reactor& reactor, std::vector<std::string> arguments);
 
-    std::shared_ptr<Process> exec();
+    ProcessPtr exec();
     void call(std::function<void(int)> callback);
     Future<int> call();
     Future<unit> check_call();

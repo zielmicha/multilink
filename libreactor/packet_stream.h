@@ -3,6 +3,7 @@
 #include "buffer.h"
 #include <functional>
 #include <boost/optional/optional.hpp>
+#include <memory>
 
 template <class T>
 using optional = boost::optional<T>;
@@ -21,6 +22,8 @@ public:
     virtual void set_on_send_ready(std::function<void()> f) = 0;
     virtual void set_on_error(std::function<void()> f) = 0;
 };
+
+using PacketStreamPtr = std::shared_ptr<PacketStream>;
 
 class AbstractPacketStream: public PacketStream {
 public:

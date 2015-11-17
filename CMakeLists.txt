@@ -8,7 +8,9 @@ set(OPT_COMMON "-fsanitize=undefined") #  -fsanitize=address
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -O3 -fcolor-diagnostics -Wno-unused-private-field")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt ${OPT_COMMON}")
 
-include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app)
+find_package (Boost 1.58.0 REQUIRED COMPONENTS program_options)
+
+include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app ${Boost_INCLUDE_DIR})
 
 add_library(json11 STATIC
   ${CMAKE_SOURCE_DIR}/deps/json11/json11.cpp)
@@ -54,4 +56,9 @@ target_link_libraries(app multilink reactor json11)
 add_executable(multilink_client
   app/client.cpp)
 
-target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl)
+target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl crypto)
+
+add_executable(multilink_server
+  app/server.cpp)
+
+target_link_libraries(multilink_server multilink reactor_tls reactor json11 ssl crypto ${Boost_LIBRARIES})

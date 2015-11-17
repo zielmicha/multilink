@@ -73,6 +73,8 @@ public:
     STREAM_FIELDS
 };
 
+using StreamPtr = Stream*;
+
 class Reactor {
 private:
     friend class FD;

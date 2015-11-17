@@ -79,10 +79,14 @@ public:
                                          size_t mtu);
 };
 
-void pipe(Reactor& reactor,
-          std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
-          size_t mtu=8192);
-void pipe(Reactor& reactor,
-          std::shared_ptr<Stream> in, std::shared_ptr<Stream> out);
+namespace packetutil {
+    void pipe(Reactor& reactor,
+              std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
+              size_t mtu=8192);
+    void pipe(Reactor& reactor,
+              std::shared_ptr<Stream> in, std::shared_ptr<Stream> out);
+}
+
+using packetutil::pipe;
 
 #endif
