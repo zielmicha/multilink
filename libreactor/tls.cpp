@@ -1,5 +1,5 @@
 #include "tls.h"
-#define LOG_NAME "tls"
+#define LOGGER_NAME "tls"
 #include "logging.h"
 
 #include <openssl/ssl.h>
@@ -115,6 +115,8 @@ Buffer TlsStream::read(Buffer out) {
             reactor.schedule(on_error);
             return out.slice(0, 0);
         }
+        if (ret == 0)
+            break;
 
         pointer += ret;
     }

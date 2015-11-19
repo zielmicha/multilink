@@ -9,6 +9,7 @@
 class Reactor;
 
 void setnonblocking(int fd);
+inline void nothing() {};
 
 class Reactor;
 
@@ -43,6 +44,11 @@ public:
 
 class AbstractStream: public Stream {
 public:
+    AbstractStream():
+        on_read_ready(nothing),
+        on_write_ready(nothing),
+        on_error(nothing) {}
+
     STREAM_FIELDS
 };
 
@@ -72,6 +78,8 @@ public:
 
     STREAM_FIELDS
 };
+
+using StreamPtr = Stream*;
 
 class Reactor {
 private:

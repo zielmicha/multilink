@@ -53,4 +53,21 @@ namespace ioutil {
         return completer.future();
     }
 
+    Future<unit> send(PacketStreamPtr stream, ByteString data) {
+        Completer<unit> completer;
+
+        auto on_send = [=]() {
+            if (stream->is_send_ready()) {
+                stream->send(data.as_buffer());
+                auto completerPtr = completer;
+                stream->set_on_recv_ready(nothing);
+                completerPtr.result({});
+            }
+        };
+
+        stream->set_on_send_ready(on_send);
+        on_send();
+
+        return completer.future();
+    }
 }

@@ -14,6 +14,7 @@ public:
 
     static ByteString copy_from(Buffer buff);
     static ByteString copy_from(const char* cstring);
+    static ByteString copy_from(const std::string& str);
 
     operator Buffer() const {
         return data->as_buffer();

@@ -7,22 +7,46 @@
 #include <sys/un.h>
 #include <sys/uio.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 namespace UnixSocket {
-    void listen(Reactor& reactor, std::string path, std::function<void(FD*)> accept_cb) {
-        unlink(path.c_str());
-
+    struct sockaddr_un make_unix_address(std::string path) {
         struct sockaddr_un servaddr = {0};
-        int sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-        setnonblocking(sockfd);
-
-        FD* fd = &reactor.take_fd(sockfd);
 
         memset(&servaddr, 0, sizeof(servaddr));
         servaddr.sun_family = AF_UNIX;
         strncpy(servaddr.sun_path, path.c_str(), sizeof(servaddr.sun_path)-1);
 
-        if(bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+        return servaddr;
+    }
+
+    StreamPtr connect(Reactor& reactor, std::string path) {
+        int sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+
+        auto servaddr = make_unix_address(path);
+
+        if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+            errno_to_exception();
+
+        setnonblocking(sockfd);
+
+        return &reactor.take_fd(sockfd);
+    }
+
+    void listen(Reactor& reactor, std::string path, std::function<void(FD*)> accept_cb) {
+        unlink(path.c_str());
+
+        int sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+        setnonblocking(sockfd);
+
+        FD* fd = &reactor.take_fd(sockfd);
+
+        auto servaddr = make_unix_address(path);
+
+        if (bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+            errno_to_exception();
+
+        if (chmod(path.c_str(), 0600) < 0)
             errno_to_exception();
 
         if(::listen(sockfd, SOMAXCONN) < 0)

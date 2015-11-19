@@ -1,14 +1,18 @@
 cmake_minimum_required (VERSION 2.6)
 project(Link)
 
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(OPT_COMMON "-fsanitize=undefined") #  -fsanitize=address
-#set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -D_GLIBCXX_DEBUG -fcolor-diagnostics -Wno-unused-private-field -fsanitize=undefined")
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror -O3 -fcolor-diagnostics -Wno-unused-private-field")
+# clang has linking problems on Ubuntu 15.10
+set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_C_COMPILER "/usr/bin/gcc")
+# set(OPT_COMMON "-fsanitize=address -fsanitize=address -D_GLIBCXX_DEBUG")
+set(OPT_COMMON "")
+# for clang++: -Wno-unused-private-field
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -fdiagnostics-color -O3 ${OPT_COMMON}")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt ${OPT_COMMON}")
 
-include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app)
+find_package (Boost 1.58.0 REQUIRED COMPONENTS program_options)
+
+include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app ${Boost_INCLUDE_DIR})
 
 add_library(json11 STATIC
   ${CMAKE_SOURCE_DIR}/deps/json11/json11.cpp)
@@ -54,4 +58,9 @@ target_link_libraries(app multilink reactor json11)
 add_executable(multilink_client
   app/client.cpp)
 
-target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl)
+target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl crypto)
+
+add_executable(multilink_server
+  app/server.cpp)
+
+target_link_libraries(multilink_server multilink reactor_tls reactor json11 ssl crypto ${Boost_LIBRARIES})
