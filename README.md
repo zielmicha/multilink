@@ -1,3 +1,7 @@
+# Multilink
+
+Multilink is an implementation of my [stream-based aggregation of unreliable heterogeneous network links](http://arxiv.org/abs/1509.08222) paper. That is, it allows you to create one stable and fast connection based on mutliple crappier links. It is not usable yet, but it soon will be.
+
 ## Build
 
 Install dependencies
