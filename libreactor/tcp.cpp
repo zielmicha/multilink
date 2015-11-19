@@ -7,18 +7,31 @@
 #include "logging.h"
 
 namespace TCP {
-    Future<FD*> connect(Reactor& reactor, std::string addr, int port) {
+    struct sockaddr_in make_addr(std::string addr, int port) {
         struct sockaddr_in servaddr = {0};
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_addr.s_addr = inet_addr(addr.c_str());
+        servaddr.sin_port = htons(port);
+        return servaddr;
+    }
+
+    Future<FD*> connect(Reactor& reactor, std::string addr, int port, std::string bind) {
         int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
         FD* fd = &reactor.take_fd(sockfd);
 
-        servaddr.sin_family = AF_INET;
-        servaddr.sin_addr.s_addr = inet_addr(addr.c_str());
-        servaddr.sin_port = htons(port);
-
         Completer<FD*> completer;
-        int res = connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+        if (!bind.empty()) {
+            auto bind_addr = make_addr(bind, 0);
+            int res = ::bind(sockfd, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+            if (res < 0) {
+                errno_to_exception();
+            }
+        }
+
+        auto connect_addr = make_addr(addr, port);
+        int res = connect(sockfd, (struct sockaddr *)&connect_addr, sizeof(connect_addr));
 
         if(res < 0 && errno != EINPROGRESS) {
             errno_to_exception();

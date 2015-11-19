@@ -27,12 +27,20 @@ struct ProcessHandler {
 
     std::function<void()> on_close;
 
-    ProcessHandler(Reactor& reactor, std::function<void()> on_close):
+    ProcessHandler(Reactor& reactor, std::function<void()> on_close, string target_host, int target_port):
         reactor(reactor), on_close(on_close) {
         path = "/tmp/.ml_" + random_hex_string(32);
         process = Popen(reactor, {"./build/app", path}).exec();
         main_stream = LengthPacketStream::create(reactor, UnixSocket::connect(reactor, path));
         multilink_num = 0;
+
+        send_message(main_stream, Json::object {
+                {"type", "multilink-client-server"},
+                {"is_server", true},
+                {"host", target_host},
+                {"port", target_port},
+                {"num", multilink_num}
+            }).wait(reactor);
     }
 
     ProcessHandler(const ProcessHandler& other) = delete;
@@ -77,6 +85,8 @@ struct ProcessHandler {
 struct Server {
     Reactor reactor;
     std::unordered_map<string, std::unique_ptr<ProcessHandler> > multilinks;
+    string target_host;
+    int target_port;
 
     ProcessHandler& get_or_create(string multilink_id) {
         auto& item = multilinks[multilink_id];
@@ -84,7 +94,7 @@ struct Server {
             auto on_close = [this, multilink_id]() {
                 multilinks.erase(multilink_id);
             };
-            item = std::unique_ptr<ProcessHandler>(new ProcessHandler(reactor, on_close));
+            item = std::unique_ptr<ProcessHandler>(new ProcessHandler(reactor, on_close, target_host, target_port));
         }
 
         return *item;
@@ -96,6 +106,9 @@ struct Server {
         Process::init();
         TlsStream::init();
 
+        this->target_port = target_port;
+        this->target_host = target_host;
+
         TCP::listen(reactor, listen_host, listen_port, [&](FD* fd) {
             LOG("incoming connection");
             auto stream = new TlsStream(reactor, fd);
@@ -104,6 +117,7 @@ struct Server {
             stream->handshake_as_server();
 
             ioutil::read(stream, 16).then([this, stream](ByteString multilink_id) -> unit {
+                // TODO: check identity
                 get_or_create(multilink_id).add_link(stream, "link");
                 return {};
             }).ignore();
@@ -125,7 +139,7 @@ ByteString file_identity_callback(string filename, const char* identity) {
     while (std::getline(stream, line)) {
         string prefix = string(identity) + ":";
         if (line.size() > prefix.size() && line.substr(0, prefix.size()) == prefix) {
-            string psk = line.substr(prefix.size(), line.size());
+            string psk = hex_decode(line.substr(prefix.size(), line.size()));
             return ByteString::copy_from(psk);
         }
     }

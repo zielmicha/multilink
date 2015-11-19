@@ -4,12 +4,30 @@ Multilink is an implementation of my [stream-based aggregation of unreliable het
 
 ## Build
 
-Install dependencies
+1. Checkout submodules
 
-```
-apt-get install libboost-program-options-dev libboost-filesystem-dev ninja-build cmake
-```
+  ```
+  git submodule update --init --recursive
+  ```
 
-or equivalent for your distro.
+2. Install dependencies
 
-If build fails with linker error mentioning `boost::program_options`, it may be a problem with your compiler version.
+  ```
+  apt-get install libboost-program-options-dev libboost-filesystem-dev ninja-build cmake
+  ```
+
+  or equivalent for your distro.
+
+3. Configure
+
+  ```
+  mkdir build && (cd build && cmake -GNinja ..)
+  ```
+
+4. Build
+
+  ```
+  ninja -C build
+  ```
+
+  If build fails with linker error mentioning `boost::program_options`, it may be a problem with your compiler version.

@@ -58,9 +58,9 @@ target_link_libraries(app multilink reactor json11)
 add_executable(multilink_client
   app/client.cpp)
 
-target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl crypto)
+target_link_libraries(multilink_client multilink reactor_tls reactor json11 ssl crypto ${Boost_LIBRARIES})
 
 add_executable(multilink_server
   app/server.cpp)
 
-target_link_libraries(multilink_server multilink reactor_tls reactor json11 ssl crypto ${Boost_LIBRARIES})
+target_link_libraries(multilink_server reactor_tls reactor json11 ssl crypto ${Boost_LIBRARIES})

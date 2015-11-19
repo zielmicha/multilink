@@ -5,7 +5,7 @@
 #include <string>
 
 namespace TCP {
-    Future<FD*> connect(Reactor& reactor, std::string addr, int port);
+    Future<FD*> connect(Reactor& reactor, std::string addr, int port, std::string bind = "");
     Future<unit> listen(Reactor& reactor, std::string addr, int port, std::function<void(FD*)> accept);
 }
 
