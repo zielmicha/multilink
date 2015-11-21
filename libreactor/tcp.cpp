@@ -1,6 +1,7 @@
 #include "tcp.h"
 #include "common.h"
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #define LOGGER_NAME "tcp"
@@ -15,9 +16,17 @@ namespace TCP {
         return servaddr;
     }
 
+    void set_nodelay(int fd, bool enable) {
+        int flag = enable ? 1 : 0;
+        if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int)) < 0)
+            errno_to_exception();
+    }
+
     Future<FD*> connect(Reactor& reactor, std::string addr, int port, std::string bind) {
         int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
+        set_nodelay(sockfd, true);
+
         FD* fd = &reactor.take_fd(sockfd);
 
         Completer<FD*> completer;
@@ -99,6 +108,7 @@ namespace TCP {
                     else
                         errno_to_exception();
                 }
+                set_nodelay(client, true);
                 accept_cb(&reactor.take_fd(client));
             }
         };
