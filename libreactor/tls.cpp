@@ -132,6 +132,10 @@ void TlsStream::handshake_as_client() {
     SSL_set_connect_state(ssl);
 }
 
+void TlsStream::set_host_name(const char *name) {
+    SSL_set_tlsext_host_name(ssl, name);
+}
+
 void TlsStream::set_cipher_list(const char* list) {
     SSL_set_cipher_list(ssl, list);
 }

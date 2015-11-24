@@ -51,6 +51,7 @@ public:
 
     void handshake_as_server();
     void handshake_as_client();
+    void set_host_name(const char* name);
     void set_cipher_list(const char* list);
     void set_psk_identity_hint(const char* hint);
 

@@ -10,7 +10,7 @@ set(OPT_COMMON "")
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -fdiagnostics-color -O3 ${OPT_COMMON}")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt ${OPT_COMMON}")
 
-find_package (Boost 1.58.0 REQUIRED COMPONENTS program_options)
+find_package (Boost 1.55.0 REQUIRED COMPONENTS program_options)
 
 include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app ${Boost_INCLUDE_DIR})
 

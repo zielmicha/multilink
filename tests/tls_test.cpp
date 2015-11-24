@@ -29,6 +29,7 @@ int main() {
         auto stream = new TlsStream(reactor, fd);
 
         stream->on_write_ready = nothing;
+        stream->set_host_name("tls-test.example");
         stream->set_cipher_list("PSK-AES256-CBC-SHA");
         stream->set_psk_client_callback([](const char* hint) {
             LOG("identity hint: " << (hint == NULL ? "(NULL)" : hint));
