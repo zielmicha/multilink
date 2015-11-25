@@ -83,10 +83,14 @@ namespace packetutil {
     void pipe(Reactor& reactor,
               std::shared_ptr<PacketStream> in, std::shared_ptr<PacketStream> out,
               size_t mtu=8192);
-    void pipe(Reactor& reactor,
-              std::shared_ptr<Stream> in, std::shared_ptr<Stream> out);
+    void pipe_both(Reactor& reactor,
+              PacketStreamPtr a, PacketStreamPtr b,
+              size_t mtu=8192);
+    void pipe_both(Reactor& reactor,
+                   StreamPtr a, StreamPtr b, size_t mtu=8192);
 }
 
 using packetutil::pipe;
+using packetutil::pipe_both;
 
 #endif

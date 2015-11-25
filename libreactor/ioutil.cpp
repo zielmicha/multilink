@@ -60,7 +60,7 @@ namespace ioutil {
             if (stream->is_send_ready()) {
                 stream->send(data.as_buffer());
                 auto completerPtr = completer;
-                stream->set_on_recv_ready(nothing);
+                stream->set_on_send_ready(nothing);
                 completerPtr.result({});
             }
         };

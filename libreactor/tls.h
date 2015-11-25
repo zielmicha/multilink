@@ -22,6 +22,7 @@ class TlsStream : public AbstractStream {
 
     void transport_send_ready();
     void transport_recv_ready();
+    bool handle_ssl_want(int err);
 
     static unsigned psk_client_callback(SSL *ssl, const char *hint,
                                         char *identity, unsigned int max_identity_len,

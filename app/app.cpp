@@ -137,8 +137,16 @@ int main(int argc, char** args) {
                         Json message) {
         server.callback(stream, message);
     };
-    auto rpcserver = RPCServer::create(reactor, argc == 2 ? args[1] : "app.sock",
-                                       callback);
+
+    const char* path = argc == 2 ? args[1] : "app.sock";
+    LOG("listening on " << path);
+
+    std::shared_ptr<RPCServer> rpcserver;
+    if (path[0] == '&') {
+        rpcserver = RPCServer::create(reactor, atoi(path + 1), callback);
+    } else {
+        rpcserver = RPCServer::create(reactor, std::string(path), callback);
+    }
 
     reactor.run();
 }

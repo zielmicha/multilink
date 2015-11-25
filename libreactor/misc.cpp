@@ -22,15 +22,17 @@ void set_recv_buffer(FD* fd, int size) {
 
 const char* hex_digits = "0123456789abcdef";
 
+#include "logging.h"
 std::string random_hex_string(int length) {
     std::random_device rd;
-    std::uniform_int_distribution<int> dist(0, 16);
+    std::uniform_int_distribution<int> dist(0, 15);
     std::string out;
     out.resize(length);
 
     for (int i=0; i < length; i ++) {
         out[i] = hex_digits[dist(rd)];
     }
+
     return out;
 }
 
@@ -45,6 +47,7 @@ int from_hex_digit(char d) {
 
 std::string hex_decode(std::string s) {
     if (s.size() % 2 != 0) throw std::runtime_error("odd length hex string");
+
     std::string ret;
     ret.resize(s.size() / 2);
     for (int i=0; i < s.size(); i += 2) {
@@ -52,4 +55,5 @@ std::string hex_decode(std::string s) {
         int b = from_hex_digit(s[i + 1]);
         ret[i / 2] = (a << 8) | b;
     }
+    return ret;
 }

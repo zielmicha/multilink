@@ -64,15 +64,15 @@ Future<unit> Popen::check_call() {
 }
 
 int Process::start_process(const Popen& options) {
-    std::vector<const char*> argv;
-    for(std::string item: options.arguments)
-        argv.push_back(item.c_str());
-    argv.push_back(nullptr);
-
     int pid = fork();
     if(pid == 0) {
         // Child
         try {
+            std::vector<const char*> argv;
+            for(std::string item: options.arguments)
+                argv.push_back(strdup(item.c_str()));
+            argv.push_back(nullptr);
+
             sigset_t sigset;
             sigemptyset(&sigset);
             sigprocmask(SIG_SETMASK, &sigset, NULL);
@@ -87,6 +87,7 @@ int Process::start_process(const Popen& options) {
             fprintf(::stderr, "exception in child");
             _exit(1);
         }
+        abort();
     }
     return pid;
 }

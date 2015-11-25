@@ -45,7 +45,9 @@ namespace Multilink {
         // Retransmit packets that haven't been acknowledged for more than few seconds.
         // TODO: replace with something that makes more sense (retramission timeout
         // based on RTTs)
-        const int RETRANSMISSION_TIMEOUT = 2000;
+        const uint64_t RETRANSMISSION_TIMEOUT = 2000 * 1000;
+
+        if (in_flight_queue.empty()) return;
 
         uint64_t first_send_time = in_flight_queue.front().transmit_time;
         if (Timer::get_time() - first_send_time > RETRANSMISSION_TIMEOUT) {

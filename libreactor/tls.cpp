@@ -66,15 +66,19 @@ void TlsStream::transport_send_ready() {
 }
 
 void TlsStream::transport_recv_ready() {
+    bool anything = false;
+
     while (BIO_ctrl_wpending(bio_in) < MAX_BIO_BUFFER) {
         optional<Buffer> buffer = packet_stream->recv();
         if (!buffer) break;
 
+        anything = true;
         int ret = BIO_write(bio_in, buffer->data, buffer->size);
         assert(ret >= 0);
     }
 
-    on_read_ready();
+    if (anything)
+        on_read_ready();
 }
 
 void tls_error(const char* name) {
@@ -83,8 +87,25 @@ void tls_error(const char* name) {
     LOG(name << ": OpenSSL error: " << err_str);
 }
 
+bool TlsStream::handle_ssl_want(int err) {
+    if (err == SSL_ERROR_WANT_READ) {
+        reactor.schedule(std::bind(&TlsStream::transport_recv_ready, this));
+        return true;
+    }
+
+    if (err == SSL_ERROR_WANT_WRITE) {
+        reactor.schedule(std::bind(&TlsStream::transport_send_ready, this));
+        return true;
+    }
+
+    return false;
+}
+
 size_t TlsStream::write(const Buffer buffer) {
+    DEBUG("SSL_write size=" << buffer.size);
     int ret = SSL_write(ssl, buffer.data, buffer.size);
+
+    reactor.schedule(std::bind(&TlsStream::transport_send_ready, this));
 
     if (ret > 0) {
         assert(ret == buffer.size);
@@ -93,7 +114,7 @@ size_t TlsStream::write(const Buffer buffer) {
 
     int err = SSL_get_error(ssl, ret);
 
-    if (err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_READ)
+    if (handle_ssl_want(err))
         return 0;
 
     tls_error("TlsStream::write");
@@ -104,11 +125,13 @@ size_t TlsStream::write(const Buffer buffer) {
 Buffer TlsStream::read(Buffer out) {
     int pointer = 0;
     while (true) {
+        DEBUG("SSL_read");
         int ret = SSL_read(ssl, out.data + pointer, out.size - pointer);
 
         if (ret < 0) {
             int err = SSL_get_error(ssl, ret);
-            if (err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_READ)
+
+            if (handle_ssl_want(err))
                 break;
 
             tls_error("TlsStream::read");
@@ -120,6 +143,8 @@ Buffer TlsStream::read(Buffer out) {
 
         pointer += ret;
     }
+
+    reactor.schedule(std::bind(&TlsStream::transport_recv_ready, this));
 
     return out.slice(0, pointer);
 }

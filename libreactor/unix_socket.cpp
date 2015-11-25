@@ -33,13 +33,13 @@ namespace UnixSocket {
         return &reactor.take_fd(sockfd);
     }
 
-    void listen(Reactor& reactor, std::string path, std::function<void(FD*)> accept_cb) {
+    FDPtr bind(Reactor& reactor, std::string path) {
         unlink(path.c_str());
 
         int sockfd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
 
-        FD* fd = &reactor.take_fd(sockfd);
+        FDPtr fd = &reactor.take_fd(sockfd);
 
         auto servaddr = make_unix_address(path);
 
@@ -52,9 +52,13 @@ namespace UnixSocket {
         if(::listen(sockfd, SOMAXCONN) < 0)
             errno_to_exception();
 
-        fd->on_read_ready = [&reactor, fd, sockfd, accept_cb]() {
+        return fd;
+    }
+
+    void listen(Reactor& reactor, FDPtr socket, std::function<void(FD*)> accept_cb) {
+        socket->on_read_ready = [&reactor, socket, accept_cb]() {
             while(true) {
-                int client = accept(sockfd, 0, 0);
+                int client = accept(socket->fileno(), 0, 0);
                 if(client < 0) {
                     if(errno == EAGAIN || errno == EINPROGRESS)
                         break;
@@ -64,6 +68,10 @@ namespace UnixSocket {
                 accept_cb(&reactor.take_fd(client));
             }
         };
+    }
+
+    void listen(Reactor& reactor, std::string path, std::function<void(FD*)> accept_cb) {
+        listen(reactor, bind(reactor, path), accept_cb);
     }
 
     int do_recv_fd(int fileno);

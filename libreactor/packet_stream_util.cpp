@@ -147,6 +147,18 @@ void pipe(Reactor& reactor,
           size_t mtu) {
     Piper::create(reactor, in, out, mtu);
 }
+void pipe_both(Reactor& reactor,
+               PacketStreamPtr a, PacketStreamPtr b,
+               size_t mtu) {
+    pipe(reactor, a, b, mtu);
+    pipe(reactor, b, a, mtu);
+}
+void pipe_both(Reactor& reactor, StreamPtr a, StreamPtr b, size_t mtu) {
+    auto pa = FreePacketStream::create(reactor, a, mtu);
+    auto pb = FreePacketStream::create(reactor, b, mtu);
+    pipe_both(reactor, pa, pb, mtu);
+}
+
 }
 
 Piper::Piper(Reactor& reactor,

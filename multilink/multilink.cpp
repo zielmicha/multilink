@@ -42,7 +42,7 @@ namespace Multilink {
         return result;
     }
 
-    Link& Multilink::add_link(Stream* stream, std::string name) {
+    Link& Multilink::add_link(StreamPtr stream, std::string name) {
         links.emplace_back(new Link(reactor, stream));
 
         Link* link = &(*links.back());

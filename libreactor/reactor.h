@@ -76,9 +76,12 @@ public:
     void close();
     int fileno();
 
+    void set_close_on_exec(bool flag);
+
     STREAM_FIELDS
 };
 
+using FDPtr = FD*;
 using StreamPtr = Stream*;
 
 class Reactor {

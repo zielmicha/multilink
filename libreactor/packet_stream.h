@@ -1,6 +1,7 @@
 #ifndef PACKET_STREAM_H_
 #define PACKET_STREAM_H_
 #include "buffer.h"
+#include "misc.h"
 #include <functional>
 #include <boost/optional/optional.hpp>
 #include <memory>
@@ -27,6 +28,8 @@ using PacketStreamPtr = std::shared_ptr<PacketStream>;
 
 class AbstractPacketStream: public PacketStream {
 public:
+    AbstractPacketStream(): on_error(nothing) {}
+
     std::function<void()> on_recv_ready;
     std::function<void()> on_send_ready;
     std::function<void()> on_error;

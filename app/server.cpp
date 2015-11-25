@@ -10,6 +10,7 @@
 #include <boost/program_options.hpp>
 #include <fstream>
 #include "json11.hpp"
+#include "multilink.h"
 
 namespace po = boost::program_options;
 
@@ -30,7 +31,12 @@ struct ProcessHandler {
     ProcessHandler(Reactor& reactor, std::function<void()> on_close, string target_host, int target_port):
         reactor(reactor), on_close(on_close) {
         path = "/tmp/.ml_" + random_hex_string(32);
-        process = Popen(reactor, {"./build/app", path}).exec();
+
+        FDPtr server_socket = UnixSocket::bind(reactor, path);
+        server_socket->set_close_on_exec(false);
+        process = Popen(reactor, {"./build/app", "&" + std::to_string(server_socket->fileno())}).exec();
+        server_socket->close();
+
         main_stream = LengthPacketStream::create(reactor, UnixSocket::connect(reactor, path));
         multilink_num = 0;
 
@@ -53,20 +59,20 @@ struct ProcessHandler {
         auto raw_stream = UnixSocket::connect(reactor, path);
         auto control_stream = LengthPacketStream::create(reactor, raw_stream);
         int stream_num = stream_counter ++;
-        return send_message(control_stream, Json::object {
-                { "type", "provide-stream" },
-                { "num", stream_num }
-            }).then([=](unit) -> Future<ByteString> {
-                stream->set_on_write_ready(nothing);
-                stream->set_on_error(nothing);
-                return ioutil::read(stream, 3);
-            }).then([=](ByteString s) -> int {
-                if (string(s) != "OK\n") {
-                    LOG("unexpected response from app");
-                    abort();
-                }
-                return stream_num;
-            });
+
+        send_message(control_stream, Json::object {
+            { "type", "provide-stream" },
+            { "num", stream_num }
+        }).ignore();
+
+        return ioutil::read(raw_stream, 3).then([=](ByteString s) -> int {
+            if (string(s) != "ok\n") {
+                LOG("unexpected response from app: " << s);
+                abort();
+            }
+            pipe_both(reactor, stream, raw_stream, Multilink::LINK_MTU);
+            return stream_num;
+        });
     }
 
     void add_link(StreamPtr stream, string name) {
@@ -91,6 +97,7 @@ struct Server {
     ProcessHandler& get_or_create(string multilink_id) {
         auto& item = multilinks[multilink_id];
         if (!item) {
+            LOG("creating new handler process");
             auto on_close = [this, multilink_id]() {
                 multilinks.erase(multilink_id);
             };
@@ -134,12 +141,12 @@ ByteString file_identity_callback(string filename, const char* identity) {
         return ByteString(0);
     }
 
-    LOG("find identity " << identity);
     string line;
     while (std::getline(stream, line)) {
         string prefix = string(identity) + ":";
         if (line.size() > prefix.size() && line.substr(0, prefix.size()) == prefix) {
             string psk = hex_decode(line.substr(prefix.size(), line.size()));
+            LOG("identity " << identity << " found");
             return ByteString::copy_from(psk);
         }
     }

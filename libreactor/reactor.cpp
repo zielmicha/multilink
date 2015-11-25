@@ -84,6 +84,17 @@ void FD::close() {
     reactor.fds.erase(fd);
 }
 
+void FD::set_close_on_exec(bool flag) {
+    int flags = fcntl(fd, F_GETFD);
+
+    if (flag)
+        flags |= FD_CLOEXEC;
+    else
+        flags &= ~FD_CLOEXEC;
+
+    fcntl(fd, F_SETFD, flags);
+}
+
 void nop() {}
 
 FD::FD(Reactor& r, int fd): reactor(r), fd(fd), on_read_ready(nop), on_write_ready(nop), on_error(nop) {}
@@ -94,7 +105,9 @@ FD& Reactor::take_fd(int fd) {
     fds.insert(fds_type::value_type(fd, FD(*this, fd)));
     // FIXME: don't throw exception (return invalid fd or error monad?)
     if(!epoll.add(fd)) errno_to_exception();
-    return fds.find(fd)->second;
+    FD& fd_obj = fds.find(fd)->second;
+    fd_obj.set_close_on_exec(true);
+    return fd_obj;
 }
 
 Reactor::Reactor() {

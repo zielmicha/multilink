@@ -3,8 +3,11 @@
 #include "logging.h"
 #include "misc.h"
 #include "multilink.h"
+#include "bytestring.h"
 #include "transport_targets.h"
 #include "transport.h"
+#include "tls.h"
+#include "ioutil.h"
 
 namespace po = boost::program_options;
 using std::string;
@@ -14,9 +17,13 @@ struct Client {
     std::shared_ptr<Multilink::Multilink> ml;
     string addr;
     int port;
+    ByteString client_id;
+    string identity, psk;
 
-    Client(string addr, int port): addr(addr), port(port) {
+    Client(string addr, int port, string identity, string psk):
+        addr(addr), port(port), identity(identity), psk(psk) {
         ml = std::make_shared<Multilink::Multilink>(reactor);
+        client_id = ByteString::copy_from(hex_decode(random_hex_string(32)));
     }
 
     void create_listening_target(int port) {
@@ -27,8 +34,28 @@ struct Client {
         create_listening_tcp_target_creator(reactor, target, "127.0.0.1", port);
     }
 
-    void add_bind_address(string addr) {
+    void add_bind_address(string bind_addr) {
+        TCP::connect(reactor, this->addr, this->port, bind_addr).then([=](StreamPtr stream) {
+            auto tls_stream = new TlsStream(reactor, stream);
+            tls_stream->handshake_as_client();
+            tls_stream->set_psk_client_callback([this](const char* hint) {
+                return TlsStream::IdentityAndPsk
+                    (ByteString::copy_from(identity), ByteString::copy_from(psk));
+            });
+            tls_stream->set_cipher_list("PSK-AES256-CBC-SHA");
+            return ioutil::write(tls_stream, client_id).then([=](unit) {
+                ml->add_link(tls_stream, bind_addr);
+                return unit();
+            });
+        }).on_success_or_failure([=](unit) {
+            LOG("connection on " << bind_addr << " established");
+        }, [=](std::unique_ptr<std::exception> ex) {
+            LOG("connection on " << bind_addr << " failed");
+        });
+    }
 
+    void run() {
+        reactor.run();
     }
 };
 
@@ -58,9 +85,15 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    Client client (vm["connect-address"].as<string>(), vm["connect-port"].as<int>());
+    TlsStream::init();
+
+    Client client (vm["connect-address"].as<string>(), vm["connect-port"].as<int>(),
+                   vm["identity"].as<string>(),
+                   hex_decode(vm["psk"].as<string>()));
     client.create_listening_target(vm["listen-port"].as<int>());
     for (string s : vm["static"].as<std::vector<string> >()) {
         client.add_bind_address(s);
     }
+
+    client.run();
 }
