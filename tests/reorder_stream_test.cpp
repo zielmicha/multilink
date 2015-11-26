@@ -1,8 +1,8 @@
-#include "reorder_stream.h"
-#include "multilink.h"
-#include "reactor.h"
-#include "misc.h"
-#include "logging.h"
+#include "multilink/reorder_stream.h"
+#include "multilink/multilink.h"
+#include "libreactor/reactor.h"
+#include "libreactor/misc.h"
+#include "libreactor/logging.h"
 
 int main() {
     Reactor reactor;

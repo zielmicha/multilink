@@ -1,11 +1,11 @@
-#include "tcp.h"
-#include "common.h"
+#include "libreactor/tcp.h"
+#include "libreactor/common.h"
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #define LOGGER_NAME "tcp"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 namespace TCP {
     struct sockaddr_in make_addr(std::string addr, int port) {

@@ -1,10 +1,10 @@
-#include "tcp.h"
+#include "libreactor/tcp.h"
 #include <boost/lexical_cast.hpp>
-#include "logging.h"
-#include "misc.h"
-#include "reorder_stream.h"
-#include "multilink.h"
-#include "throttled.h"
+#include "libreactor/logging.h"
+#include "libreactor/misc.h"
+#include "multilink/reorder_stream.h"
+#include "multilink/multilink.h"
+#include "libreactor/throttled.h"
 
 int main() {
     Reactor reactor;

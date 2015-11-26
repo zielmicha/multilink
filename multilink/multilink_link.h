@@ -3,10 +3,10 @@
 #include <cstdint>
 #include <string>
 #include <iostream>
-#include "reactor.h"
-#include "timer.h"
-#include "multilink_stats.h"
-#include "packet_stream.h"
+#include "libreactor/reactor.h"
+#include "libreactor/timer.h"
+#include "multilink/multilink_stats.h"
+#include "libreactor/packet_stream.h"
 
 namespace Multilink {
     const size_t LINK_MTU = 16384;

@@ -1,7 +1,7 @@
 #ifndef MULTILINK_H
 #define MULTILINK_H
-#include "multilink_link.h"
-#include "packet_queue.h"
+#include "multilink/multilink_link.h"
+#include "multilink/packet_queue.h"
 
 namespace Multilink {
     class Multilink: public AbstractPacketStream {

@@ -1,6 +1,6 @@
-#include "packet_queue.h"
+#include "multilink/packet_queue.h"
 #define LOGGER_NAME "packetqueue"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 PacketQueue::PacketQueue(size_t max_size, size_t mtu): mtu(mtu), max_count(max_size / mtu) {
 }

@@ -1,6 +1,6 @@
-#include "transport.h"
+#include "multilink/transport.h"
 #define LOGGER_NAME "transport"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 // MAX_BUFFER_SIZE - BUFFER_SIZE_MARK has to be bigger than bandwidth-delay product
 //const int MAX_BUFFER_SIZE = 8 * 1024 * 1024;

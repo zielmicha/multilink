@@ -1,7 +1,7 @@
 #ifndef PACKET_STREAM_H_
 #define PACKET_STREAM_H_
-#include "buffer.h"
-#include "misc.h"
+#include "libreactor/buffer.h"
+#include "libreactor/misc.h"
 #include <functional>
 #include <boost/optional/optional.hpp>
 #include <memory>

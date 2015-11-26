@@ -1,6 +1,6 @@
 #include <stdlib.h>
-#include "process.h"
-#include "logging.h"
+#include "libreactor/process.h"
+#include "libreactor/logging.h"
 
 int main() {
     setup_crash_handlers();

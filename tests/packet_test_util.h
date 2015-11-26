@@ -1,8 +1,8 @@
-#include "packet_stream.h"
-#include "packet_stream_util.h"
-#include "exfunctional.h"
-#include "logging.h"
-#include "misc.h"
+#include "libreactor/packet_stream.h"
+#include "libreactor/packet_stream_util.h"
+#include "libreactor/exfunctional.h"
+#include "libreactor/logging.h"
+#include "libreactor/misc.h"
 
 std::vector<std::shared_ptr<PacketStream> > packet_stream_pair(Reactor& reactor) {
     auto p = fd_pair(reactor);

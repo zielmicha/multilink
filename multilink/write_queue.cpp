@@ -1,6 +1,6 @@
-#include "write_queue.h"
+#include "multilink/write_queue.h"
 #define LOGGER_NAME "writequeue"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 const int MTU = 4096; // TODO
 

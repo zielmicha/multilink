@@ -1,9 +1,9 @@
 #ifndef RPC_H_
 #define RPC_H_
-#include "reactor.h"
+#include "libreactor/reactor.h"
 #include <memory>
 #include "json11.hpp"
-#include "future.h"
+#include "libreactor/future.h"
 
 using json11::Json;
 

@@ -1,7 +1,7 @@
-#include "throttled.h"
-#include "misc.h"
+#include "libreactor/throttled.h"
+#include "libreactor/misc.h"
 #define LOGGER_NAME "throttled"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 ThrottledStream::ThrottledStream(Reactor& reactor, Stream* stream, double mbps)
     : reactor(reactor),

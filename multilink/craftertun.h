@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "craftertun.h"
-#include "common.h"
-#include "reactor.h"
+#include "multilink/craftertun.h"
+#include "libreactor/common.h"
+#include "libreactor/reactor.h"
 
 #include <crafter.h>
 

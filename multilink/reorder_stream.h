@@ -1,6 +1,6 @@
 #ifndef REORDER_STREAM_H_
 #define REORDER_STREAM_H_
-#include "packet_stream.h"
+#include "libreactor/packet_stream.h"
 #include <unordered_map>
 
 class ReorderStream: public AbstractPacketStream {

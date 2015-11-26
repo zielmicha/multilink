@@ -1,5 +1,5 @@
-#include "misc.h"
-#include "common.h"
+#include "libreactor/misc.h"
+#include "libreactor/common.h"
 #include <random>
 
 std::vector<FD*> fd_pair(Reactor& reactor) {
@@ -22,7 +22,7 @@ void set_recv_buffer(FD* fd, int size) {
 
 const char* hex_digits = "0123456789abcdef";
 
-#include "logging.h"
+#include "libreactor/logging.h"
 std::string random_hex_string(int length) {
     std::random_device rd;
     std::uniform_int_distribution<int> dist(0, 15);

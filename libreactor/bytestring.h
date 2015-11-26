@@ -1,7 +1,7 @@
 #ifndef BYTESTRING_H_
 #define BYTESTRING_H_
 #include <memory>
-#include "buffer.h"
+#include "libreactor/buffer.h"
 
 class ByteString {
     std::shared_ptr<AllocBuffer> data;

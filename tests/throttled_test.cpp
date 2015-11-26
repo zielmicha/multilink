@@ -1,7 +1,7 @@
-#include "throttled.h"
-#include "misc.h"
-#include "streamutil.h"
-#include "logging.h"
+#include "libreactor/throttled.h"
+#include "libreactor/misc.h"
+#include "libreactor/streamutil.h"
+#include "libreactor/logging.h"
 
 void write_test(Reactor& reactor, Stream* out, int count);
 

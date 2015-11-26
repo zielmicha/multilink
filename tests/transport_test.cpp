@@ -1,9 +1,9 @@
-#include "transport.h"
-#include "logging.h"
-#include "write_queue.h"
-#include "timer.h"
+#include "multilink/transport.h"
+#include "libreactor/logging.h"
+#include "multilink/write_queue.h"
+#include "libreactor/timer.h"
 
-#include "packet_test_util.h"
+#include "tests/packet_test_util.h"
 
 int main() {
     Reactor reactor;

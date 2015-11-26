@@ -1,8 +1,8 @@
 #ifndef PROCESS_H_
 #define PROCESS_H_
 #include <memory>
-#include "reactor.h"
-#include "future.h"
+#include "libreactor/reactor.h"
+#include "libreactor/future.h"
 #include <unordered_map>
 #include <vector>
 #include <stdexcept>

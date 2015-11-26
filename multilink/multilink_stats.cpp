@@ -1,5 +1,5 @@
-#include "multilink_stats.h"
-#include "logging.h"
+#include "multilink/multilink_stats.h"
+#include "libreactor/logging.h"
 #include <cmath>
 
 namespace Multilink {

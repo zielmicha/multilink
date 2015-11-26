@@ -1,7 +1,7 @@
-#include "packet_stream_util.h"
+#include "libreactor/packet_stream_util.h"
 #define LOGGER_NAME "packetstreamutil"
-#include "logging.h"
-#include "misc.h"
+#include "libreactor/logging.h"
+#include "libreactor/misc.h"
 
 const int MTU = 16384;
 

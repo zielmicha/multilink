@@ -1,6 +1,6 @@
-#include "reorder_stream.h"
+#include "multilink/reorder_stream.h"
 #define LOGGER_NAME "reorderstream"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 ReorderStream::ReorderStream(PacketStream* stream): stream(stream) {
     stream->set_on_recv_ready(std::bind(&ReorderStream::transport_recv_ready, this));

@@ -1,6 +1,6 @@
 #ifndef FUTURE_H_
 #define FUTURE_H_
-#include "reactor.h"
+#include "libreactor/reactor.h"
 #include <cassert>
 
 struct unit {};

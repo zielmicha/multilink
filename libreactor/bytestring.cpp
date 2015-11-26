@@ -1,4 +1,4 @@
-#include "bytestring.h"
+#include "libreactor/bytestring.h"
 ByteString::ByteString(): data(nullptr) {}
 
 ByteString::ByteString(size_t size) {

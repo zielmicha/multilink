@@ -1,8 +1,8 @@
-#include "common.h"
-#include "craftertun.h"
+#include "libreactor/common.h"
+#include "multilink/craftertun.h"
 
 #define LOGGER_NAME "tun"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 #include <sys/ioctl.h>
 #include <cstring>

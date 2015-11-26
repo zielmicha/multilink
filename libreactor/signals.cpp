@@ -3,8 +3,8 @@
 #include <vector>
 #include <unordered_map>
 #define LOGGER_NAME "signals"
-#include "logging.h"
-#include "signals.h"
+#include "libreactor/logging.h"
+#include "libreactor/signals.h"
 
 namespace Signals {
     sigset_t sigset;

@@ -1,7 +1,7 @@
 #ifndef PACKET_QUEUE_H_
 #define PACKET_QUEUE_H_
 #include <deque>
-#include "buffer.h"
+#include "libreactor/buffer.h"
 
 class PacketQueue {
     std::deque<AllocBuffer> queue;

@@ -1,7 +1,7 @@
 #ifndef TRANSPORT_H_
 #define TRANSPORT_H_
-#include "packet_stream.h"
-#include "future.h"
+#include "libreactor/packet_stream.h"
+#include "libreactor/future.h"
 #include <memory>
 #include <unordered_map>
 #include <deque>

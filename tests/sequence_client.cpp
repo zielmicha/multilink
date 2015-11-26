@@ -1,9 +1,9 @@
-#include "tcp.h"
+#include "libreactor/tcp.h"
 #include <boost/lexical_cast.hpp>
-#include "logging.h"
-#include "misc.h"
-#include "reorder_stream.h"
-#include "multilink.h"
+#include "libreactor/logging.h"
+#include "libreactor/misc.h"
+#include "multilink/reorder_stream.h"
+#include "multilink/multilink.h"
 
 int main(int argc, char** argv) {
     Reactor reactor;

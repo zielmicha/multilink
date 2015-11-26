@@ -1,7 +1,7 @@
-#include "multilink.h"
-#include "misc.h"
-#include "buffer.h"
-#include "logging.h"
+#include "multilink/multilink.h"
+#include "libreactor/misc.h"
+#include "libreactor/buffer.h"
+#include "libreactor/logging.h"
 using namespace Multilink;
 using namespace std;
 

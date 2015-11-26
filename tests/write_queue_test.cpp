@@ -1,9 +1,9 @@
-#include "multilink.h"
-#include "reactor.h"
-#include "write_queue.h"
-#include "packet_stream_util.h"
-#include "misc.h"
-#include "logging.h"
+#include "multilink/multilink.h"
+#include "libreactor/reactor.h"
+#include "multilink/write_queue.h"
+#include "libreactor/packet_stream_util.h"
+#include "libreactor/misc.h"
+#include "libreactor/logging.h"
 
 int main() {
     Reactor reactor;

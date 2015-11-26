@@ -1,8 +1,8 @@
-#include "transport_targets.h"
-#include "packet_stream_util.h"
+#include "multilink/transport_targets.h"
+#include "libreactor/packet_stream_util.h"
 #define LOG_NAME "transport_targets"
-#include "logging.h"
-#include "misc.h"
+#include "libreactor/logging.h"
+#include "libreactor/misc.h"
 
 TargetCreator create_connecting_tcp_target_creator(Reactor& reactor, std::string host, int port) {
     return [host, port, &reactor](uint64_t id) -> Future<std::shared_ptr<PacketStream> > {

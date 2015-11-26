@@ -1,7 +1,7 @@
 #ifndef PACKET_STREAM_UTIL_H_
 #define PACKET_STREAM_UTIL_H_
-#include "packet_stream.h"
-#include "reactor.h"
+#include "libreactor/packet_stream.h"
+#include "libreactor/reactor.h"
 
 class FreeWriterPacketStream: public AbstractPacketStream {
 protected:

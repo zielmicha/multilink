@@ -1,4 +1,4 @@
-#include "future.h"
+#include "libreactor/future.h"
 
 int main() {
     Future<int> f = Future<int>::make_immediate(0);

@@ -1,13 +1,13 @@
-#include "multilink.h"
-#include "transport.h"
-#include "transport_targets.h"
+#include "multilink/multilink.h"
+#include "multilink/transport.h"
+#include "multilink/transport_targets.h"
 #include <iostream>
 #include <memory>
-#include "rpc.h"
-#include "ioutil.h"
-#include "throttled.h"
-#include "packet_stream_util.h"
-#include "logging.h"
+#include "app/rpc.h"
+#include "libreactor/ioutil.h"
+#include "libreactor/throttled.h"
+#include "libreactor/packet_stream_util.h"
+#include "libreactor/logging.h"
 
 class Server {
     Reactor& reactor;

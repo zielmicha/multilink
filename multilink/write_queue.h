@@ -1,8 +1,8 @@
 #ifndef WRITE_QUEUE_H_
 #define WRITE_QUEUE_H_
-#include "reactor.h"
-#include "packet_stream.h"
-#include "packet_queue.h"
+#include "libreactor/reactor.h"
+#include "libreactor/packet_stream.h"
+#include "multilink/packet_queue.h"
 
 class WriteQueue {
     std::shared_ptr<PacketStream> output;

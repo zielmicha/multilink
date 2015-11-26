@@ -1,6 +1,6 @@
-#include "multilink.h"
+#include "multilink/multilink.h"
 #define LOGGER_NAME "multilink"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 namespace Multilink {
     const int QUEUE_SIZE = 40;

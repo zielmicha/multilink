@@ -1,8 +1,8 @@
-#include "process.h"
-#include "signals.h"
-#include "common.h"
+#include "libreactor/process.h"
+#include "libreactor/signals.h"
+#include "libreactor/common.h"
 #define LOGGER_NAME "process"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 #include <unistd.h>
 #include <signal.h>

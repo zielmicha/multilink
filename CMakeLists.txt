@@ -12,7 +12,7 @@ set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt ${OPT_COMMON}")
 
 find_package (Boost 1.55.0 REQUIRED COMPONENTS program_options)
 
-include_directories(${CMAKE_SOURCE_DIR}/libreactor ${CMAKE_SOURCE_DIR}/multilink ${CMAKE_SOURCE_DIR}/deps/json11 ${CMAKE_SOURCE_DIR}/app ${Boost_INCLUDE_DIR})
+include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/deps/json11 ${Boost_INCLUDE_DIR})
 
 add_library(json11 STATIC
   ${CMAKE_SOURCE_DIR}/deps/json11/json11.cpp)

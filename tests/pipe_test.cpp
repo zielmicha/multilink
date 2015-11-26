@@ -1,9 +1,9 @@
-#include "reactor.h"
-#include "packet_stream_util.h"
-#include "misc.h"
-#include "exfunctional.h"
-#include "logging.h"
-#include "timer.h"
+#include "libreactor/reactor.h"
+#include "libreactor/packet_stream_util.h"
+#include "libreactor/misc.h"
+#include "libreactor/exfunctional.h"
+#include "libreactor/logging.h"
+#include "libreactor/timer.h"
 
 int main() {
     Reactor reactor;

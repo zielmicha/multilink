@@ -1,8 +1,8 @@
 #ifndef TLS_H_
 #define TLS_H_
-#include "reactor.h"
-#include "bytestring.h"
-#include "packet_stream_util.h"
+#include "libreactor/reactor.h"
+#include "libreactor/bytestring.h"
+#include "libreactor/packet_stream_util.h"
 
 struct ssl_st;
 struct bio_t;

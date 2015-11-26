@@ -1,5 +1,5 @@
-#include "reactor.h"
-#include "timer.h"
+#include "libreactor/reactor.h"
+#include "libreactor/timer.h"
 
 class ThrottledStream: public Stream {
     // Throttles only writes.

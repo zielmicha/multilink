@@ -1,5 +1,5 @@
-#include "epoll.h"
-#include "common.h"
+#include "libreactor/epoll.h"
+#include "libreactor/common.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +14,7 @@
 #include <signal.h>
 
 #define LOGGER_NAME "epoll"
-#include "logging.h"
+#include "libreactor/logging.h"
 
 const int MAX_EVENTS = 64;
 
