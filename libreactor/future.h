@@ -78,6 +78,18 @@ public:
         return Future(std::shared_ptr<_BaseFutureData<T> >(dataptr));
     }
 
+    static Future<T> make_exception(std::unique_ptr<std::exception>&& exception) {
+        auto dataptr = new _FutureData<T>;
+        dataptr->state = FutureState::IMMEDIATE_EXCEPTION;
+        dataptr->exception = std::move(exception);
+
+        return Future(std::shared_ptr<_BaseFutureData<T> >(dataptr));
+    }
+
+    static Future<T> make_exception(std::string description) {
+        return make_exception(std::unique_ptr<std::exception>(new std::runtime_error(description)));
+    }
+
     void on_success_or_failure(
         const std::function<void(T)>& fun_value,
         const std::function<void(std::unique_ptr<std::exception>)>& fun_exc) const {
