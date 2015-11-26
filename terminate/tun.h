@@ -1,13 +1,10 @@
-#ifndef CRAFTERTUN_H_
-#define CRAFTERTUN_H_
+#ifndef TERMINATE_TUN_H_
+#define TERMINATE_TUN_H_
 
 #include <string>
 
-#include "multilink/craftertun.h"
 #include "libreactor/common.h"
 #include "libreactor/reactor.h"
-
-#include <crafter.h>
 
 class Tun {
 protected:
@@ -19,8 +16,10 @@ public:
     Tun(Reactor& r, std::string name);
     Tun(const Tun& t) = delete;
 
-    std::function<void(Crafter::Packet&)> on_recv;
+    std::function<void(Buffer)> on_recv;
     std::string name;
 };
+
+typedef std::shared_ptr<Tun> TunPtr;
 
 #endif

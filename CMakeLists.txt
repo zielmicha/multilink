@@ -47,6 +47,12 @@ add_library(multilink STATIC
   multilink/multilink_link.cpp
   multilink/multilink_stats.cpp)
 
+include(deps/lwip/CMakeLists.txt)
+
+add_library(terminate STATIC
+  terminate/tun.cpp
+  terminate/terminate.cpp)
+
 include(tests/CMakeLists.txt)
 
 add_executable(app

@@ -1,5 +1,5 @@
 #include "libreactor/common.h"
-#include "multilink/craftertun.h"
+#include "terminate/tun.h"
 
 #define LOGGER_NAME "tun"
 #include "libreactor/logging.h"
@@ -48,9 +48,6 @@ void Tun::on_read() {
     while(true) {
         Buffer data = fd->read(buffer);
         if(data.size == 0) break;
-        Crafter::Packet packet;
-        const int offset = 4;
-        packet.PacketFromIP((unsigned char*)(data.data + offset), data.size - offset);
-        on_recv(packet);
+        on_recv(buffer);
     }
 }

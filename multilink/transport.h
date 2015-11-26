@@ -67,4 +67,6 @@ public:
     void add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > stream);
 };
 
+typedef std::shared_ptr<Transport> TransportPtr;
+
 #endif
