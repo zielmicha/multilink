@@ -4,7 +4,7 @@
 
 namespace ioutil {
 
-    Future<ByteString> read(Stream* fd, int size) {
+    Future<ByteString> read(StreamPtr fd, int size) {
         std::shared_ptr<int> pointer = std::make_shared<int>(0);
         ImmediateCompleter<ByteString> completer {ByteString(size)};
         *pointer = 0;
@@ -29,7 +29,7 @@ namespace ioutil {
         return completer.future();
     }
 
-    Future<unit> write(Stream* fd, ByteString data) {
+    Future<unit> write(StreamPtr fd, ByteString data) {
         std::shared_ptr<int> pointer = std::make_shared<int>(0);
         Completer<unit> completer;
 

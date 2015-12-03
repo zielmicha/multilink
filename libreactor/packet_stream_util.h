@@ -6,7 +6,7 @@
 class FreeWriterPacketStream: public AbstractPacketStream {
 protected:
     Reactor& reactor;
-    Stream* stream;
+    StreamPtr stream;
 
     AllocBuffer send_buffer;
     Buffer send_buffer_current;
@@ -14,7 +14,7 @@ protected:
     void write_ready();
     void error_ready();
 
-    FreeWriterPacketStream(Reactor& reactor, Stream* stream);
+    FreeWriterPacketStream(Reactor& reactor, StreamPtr stream);
 public:
     FreeWriterPacketStream(const FreeWriterPacketStream&) = delete;
 
@@ -30,11 +30,11 @@ class FreePacketStream: public FreeWriterPacketStream {
 
     void read_ready();
 
-    FreePacketStream(Reactor& reactor, Stream* stream, size_t mtu);
+    FreePacketStream(Reactor& reactor, StreamPtr stream, size_t mtu);
 public:
     FreePacketStream(const FreePacketStream&) = delete;
 
-    static std::shared_ptr<FreePacketStream> create(Reactor& reactor, Stream* stream,
+    static std::shared_ptr<FreePacketStream> create(Reactor& reactor, StreamPtr stream,
                                                     size_t mtu = 8192);
 
     optional<Buffer> recv();
@@ -46,11 +46,11 @@ class LengthPacketStream: public FreeWriterPacketStream {
     int recv_buffer_pos;
     void read_ready();
 
-    LengthPacketStream(Reactor& reactor, Stream* stream);
+    LengthPacketStream(Reactor& reactor, StreamPtr stream);
 public:
     LengthPacketStream(const LengthPacketStream&) = delete;
 
-    static std::shared_ptr<LengthPacketStream> create(Reactor& reactor, Stream* stream);
+    static std::shared_ptr<LengthPacketStream> create(Reactor& reactor, StreamPtr stream);
 
     void send(const Buffer data);
     optional<Buffer> recv();

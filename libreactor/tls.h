@@ -9,9 +9,13 @@ struct bio_t;
 typedef struct ssl_st SSL;
 typedef struct bio_st BIO;
 
+class TlsStream;
+
+typedef TlsStream* TlsStreamPtr;
+
 class TlsStream : public AbstractStream {
     Reactor& reactor;
-    Stream* stream;
+    StreamPtr stream;
 
     std::shared_ptr<FreePacketStream> packet_stream;
     AllocBuffer out_buffer;
@@ -47,7 +51,7 @@ private:
 
 public:
 
-    TlsStream(Reactor& reactor, Stream* stream);
+    TlsStream(Reactor& reactor, StreamPtr stream);
     ~TlsStream();
 
     void handshake_as_server();

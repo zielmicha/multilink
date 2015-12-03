@@ -9,8 +9,8 @@ int main() {
     std::vector<FD*> fds = fd_pair(reactor);
 
     {
-        Stream* out = new DelayedStream(reactor, fds[0], 100, 1000 * 1000);
-        Stream* in = fds[1];
+        StreamPtr out = new DelayedStream(reactor, fds[0], 100, 1000 * 1000);
+        StreamPtr in = fds[1];
 
         out->set_on_read_ready(nothing);
         in->set_on_write_ready(nothing);

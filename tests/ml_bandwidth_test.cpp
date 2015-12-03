@@ -4,9 +4,9 @@
 #include "multilink/write_queue.h"
 #include "libreactor/throttled.h"
 
-std::pair<Stream*, FD*> create_throttled_pair(Reactor& reactor, double speed, uint64_t buffsize, uint64_t delay) {
+std::pair<StreamPtr, FD*> create_throttled_pair(Reactor& reactor, double speed, uint64_t buffsize, uint64_t delay) {
     std::vector<FD*> fds = fd_pair(reactor);
-    Stream* delayed = new DelayedStream(reactor, fds[0], buffsize, delay);
+    StreamPtr delayed = new DelayedStream(reactor, fds[0], buffsize, delay);
     return {new ThrottledStream(reactor, delayed, speed), fds[1]};
 }
 

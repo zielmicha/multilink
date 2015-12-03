@@ -3,7 +3,7 @@
 #define LOGGER_NAME "throttled"
 #include "libreactor/logging.h"
 
-ThrottledStream::ThrottledStream(Reactor& reactor, Stream* stream, double mbps)
+ThrottledStream::ThrottledStream(Reactor& reactor, StreamPtr stream, double mbps)
     : reactor(reactor),
       timer(reactor),
       stream(stream),
@@ -54,7 +54,7 @@ void ThrottledStream::error() {
     on_error();
 }
 
-DelayedStream::DelayedStream(Reactor& reactor, Stream* stream,
+DelayedStream::DelayedStream(Reactor& reactor, StreamPtr stream,
                              uint64_t buffsize, uint64_t delay): reactor(reactor),
                                                                  timer(reactor),
                                                                  stream(stream),

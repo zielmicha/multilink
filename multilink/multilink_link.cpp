@@ -7,7 +7,7 @@ namespace Multilink {
     const size_t MTU = Multilink::LINK_MTU;
     const uint64_t PING_INTERVAL = 1000 * 1000 / 4;
 
-    Link::Link(Reactor& reactor, Stream* stream): reactor(reactor),
+    Link::Link(Reactor& reactor, StreamPtr stream): reactor(reactor),
                                                   stream(stream),
                                                   timer(reactor),
                                                   recv_buffer_alloc(MTU),

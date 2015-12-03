@@ -16,7 +16,7 @@ namespace Multilink {
     class Link {
     private:
         Reactor& reactor;
-        Stream* stream;
+        StreamPtr stream;
         Timer timer;
 
         AllocBuffer recv_buffer_alloc;
@@ -68,7 +68,7 @@ namespace Multilink {
         std::deque<InFlightPacket> in_flight_queue;
 
     public:
-        Link(Reactor& reactor, Stream* stream);
+        Link(Reactor& reactor, StreamPtr stream);
         ~Link();
         Link(const Link& l) = delete;
 

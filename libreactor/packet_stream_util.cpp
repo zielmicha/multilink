@@ -5,13 +5,13 @@
 
 const int MTU = 16384;
 
-FreePacketStream::FreePacketStream(Reactor& reactor, Stream* stream, size_t mtu):
+FreePacketStream::FreePacketStream(Reactor& reactor, StreamPtr stream, size_t mtu):
     FreeWriterPacketStream(reactor, stream),
     recv_buffer(mtu) {
 }
 
 std::shared_ptr<FreePacketStream> FreePacketStream::create(
-    Reactor& reactor, Stream* stream, size_t mtu) {
+    Reactor& reactor, StreamPtr stream, size_t mtu) {
     std::shared_ptr<FreePacketStream> self {new FreePacketStream(reactor, stream, mtu)};
     stream->set_on_write_ready_and_schedule(reactor, std::bind(&FreePacketStream::write_ready, self));
     stream->set_on_read_ready_and_schedule(reactor, std::bind(&FreePacketStream::read_ready, self));
@@ -33,7 +33,7 @@ void FreePacketStream::read_ready() {
 
 // ----- FreeWriterPacketStream -----
 
-FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, Stream* stream):
+FreeWriterPacketStream::FreeWriterPacketStream(Reactor& reactor, StreamPtr stream):
     reactor(reactor),
     stream(stream),
     send_buffer(MTU),
@@ -73,14 +73,14 @@ void FreeWriterPacketStream::write_ready() {
 
 // ----- LengthPacketStream -----
 
-LengthPacketStream::LengthPacketStream(Reactor& reactor, Stream* stream):
+LengthPacketStream::LengthPacketStream(Reactor& reactor, StreamPtr stream):
     FreeWriterPacketStream(reactor, stream),
     recv_buffer(MTU * 2),
     recv_caller_buffer(MTU),
     recv_buffer_pos(0) {}
 
 std::shared_ptr<LengthPacketStream> LengthPacketStream::create(
-    Reactor& reactor, Stream* stream) {
+    Reactor& reactor, StreamPtr stream) {
     std::shared_ptr<LengthPacketStream> self {new LengthPacketStream(reactor, stream)};
     stream->set_on_write_ready_and_schedule(
         reactor, std::bind(&LengthPacketStream::write_ready, self));

@@ -12,7 +12,7 @@ static int tls_stream_index;
 const int MTU = 8192;
 const int MAX_BIO_BUFFER = 32768;
 
-TlsStream::TlsStream(Reactor& reactor, Stream* stream): reactor(reactor),
+TlsStream::TlsStream(Reactor& reactor, StreamPtr stream): reactor(reactor),
                                                         stream(stream),
                                                         out_buffer(MTU) {
     // FIXME: we do excessive amount of buffering
@@ -173,7 +173,7 @@ unsigned TlsStream::psk_client_callback(SSL *ssl, const char *hint,
                                         char *identity_out, unsigned int max_identity_len,
                                         unsigned char *psk_out, unsigned int max_psk_len) {
 
-    TlsStream* self = (TlsStream*)SSL_get_ex_data(ssl, tls_stream_index);
+    TlsStreamPtr self = (TlsStreamPtr)SSL_get_ex_data(ssl, tls_stream_index);
     IdentityAndPsk ret = self->client_psk_func(hint);
 
     Buffer psk = ret.psk.as_buffer();
@@ -196,7 +196,7 @@ void TlsStream::set_psk_client_callback(ClientPskFunc func) {
 
 unsigned TlsStream::psk_server_callback(SSL *ssl, const char *identity,
                                         unsigned char *psk_out, unsigned int max_psk_len) {
-    TlsStream* self = (TlsStream*)SSL_get_ex_data(ssl, tls_stream_index);
+    TlsStreamPtr self = (TlsStreamPtr)SSL_get_ex_data(ssl, tls_stream_index);
     ByteString psk_b = self->server_psk_func(identity);
     Buffer psk = psk_b.as_buffer();
 

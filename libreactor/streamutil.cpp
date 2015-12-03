@@ -1,7 +1,7 @@
 #include "libreactor/streamutil.h"
 #include <memory>
 
-Future<unit> write_all(Reactor& reactor, Stream* out, Buffer data) {
+Future<unit> write_all(Reactor& reactor, StreamPtr out, Buffer data) {
     std::shared_ptr<Buffer> datap = std::make_shared<Buffer>(data);
     Completer<unit> completer;
 
@@ -22,7 +22,7 @@ Future<unit> write_all(Reactor& reactor, Stream* out, Buffer data) {
     return completer.future();
 }
 
-void read_all(Stream* in, std::function<void(Buffer)> callback) {
+void read_all(StreamPtr in, std::function<void(Buffer)> callback) {
     in->set_on_read_ready([callback, in]() {
         while(true) {
             StackBuffer<1024> buff;

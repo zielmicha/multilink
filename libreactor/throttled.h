@@ -6,7 +6,7 @@ class ThrottledStream: public Stream {
     Reactor& reactor;
     Timer timer;
 
-    Stream* stream;
+    StreamPtr stream;
     double mbps;
     uint64_t next_transmission = 0;
 
@@ -16,7 +16,7 @@ class ThrottledStream: public Stream {
     bool can_transmit();
 
 public:
-    ThrottledStream(Reactor& reactor, Stream* stream, double mbps);
+    ThrottledStream(Reactor& reactor, StreamPtr stream, double mbps);
     ThrottledStream(const ThrottledStream& other) = delete;
 
     Buffer read(Buffer data);
@@ -30,7 +30,7 @@ class DelayedStream: public Stream {
     // Delays writes.
     Reactor& reactor;
     Timer timer;
-    Stream* stream;
+    StreamPtr stream;
     std::deque<AllocBuffer> buffers;
     int waiting = 0;
     int front_pointer = 0;
@@ -44,7 +44,7 @@ class DelayedStream: public Stream {
     std::function<void()> after_delay_fn;
 
 public:
-    DelayedStream(Reactor& reactor, Stream* stream, uint64_t buffsize, uint64_t delay);
+    DelayedStream(Reactor& reactor, StreamPtr stream, uint64_t buffsize, uint64_t delay);
     DelayedStream(const DelayedStream& other) = delete;
 
     Buffer read(Buffer data);

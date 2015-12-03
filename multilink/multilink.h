@@ -31,7 +31,7 @@ namespace Multilink {
         Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;
 
-        Link& add_link(Stream* stream, std::string name = "default");
+        Link& add_link(StreamPtr stream, std::string name = "default");
 
         bool is_send_ready();
 
