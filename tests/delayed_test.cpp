@@ -9,7 +9,7 @@ int main() {
     std::vector<FDPtr> fds = fd_pair(reactor);
 
     {
-        StreamPtr out = new DelayedStream(reactor, fds[0], 100, 1000 * 1000);
+        StreamPtr out = std::make_shared<DelayedStream>(reactor, fds[0], 100, 1000 * 1000);
         StreamPtr in = fds[1];
 
         out->set_on_read_ready(nothing);

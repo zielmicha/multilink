@@ -15,7 +15,7 @@ void Terminator::tcp_accepted(TcpStreamPtr stream) {
 
     ByteString header = ByteString::copy_from("tcp\n" + addr + ":" + std::to_string(port));
 
-    auto result_stream = std::make_shared<ReadHeaderPacketStream>(header, FreePacketStream::create(reactor, nullptr, transport.lock()->get_mtu()));
+    auto result_stream = std::make_shared<ReadHeaderPacketStream>(header, FreePacketStream::create(reactor, stream, transport.lock()->get_mtu()));
     transport.lock()->add_target(id_counter ++, Future<PacketStreamPtr>::make_immediate(result_stream));
 }
 
@@ -35,8 +35,7 @@ Future<PacketStreamPtr> Terminator::create_target(uint64_t id) {
         return Future<PacketStreamPtr>::make_immediate(PacketStreamPtr(nullptr));
     }
 
-    return Future<PacketStreamPtr>::make_immediate(PacketStreamPtr
-                                                   (new HeaderPacketStream(std::bind(&Terminator::create_target_2, shared_from_this(), std::placeholders::_1))));
+    return Future<PacketStreamPtr>::make_immediate(std::make_shared<HeaderPacketStream>(std::bind(&Terminator::create_target_2, shared_from_this(), std::placeholders::_1)));
 }
 
 Future<PacketStreamPtr> Terminator::create_target_2(Buffer header) {

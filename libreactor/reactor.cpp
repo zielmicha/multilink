@@ -101,13 +101,13 @@ FD::FD(Reactor& r, int fd): reactor(r), fd(fd), on_read_ready(nop), on_write_rea
 
 FDPtr Reactor::take_fd(int fd) {
     setnonblocking(fd);
-    typedef decltype(fds) fds_type;
-    fds.insert(fds_type::value_type(fd, FD(*this, fd)));
-    // FIXME: don't throw exception (return invalid fd or error monad?)
+
+    FDPtr fd_obj = FDPtr(new FD(*this, fd));
+    fds[fd] = fd_obj;
+
     if(!epoll.add(fd)) errno_to_exception();
-    FD& fd_obj = fds.find(fd)->second;
-    fd_obj.set_close_on_exec(true);
-    return &fd_obj;
+    fd_obj->set_close_on_exec(true);
+    return fd_obj;
 }
 
 Reactor::Reactor() {
@@ -144,13 +144,13 @@ void Reactor::step() {
             LOG("epoll returned unknown fd: " << r.fd);
             continue;
         }
-        FD& fd = iter->second;
+        FDPtr& fd = iter->second;
         if(r.read_ready)
-            fd.on_read_ready();
+            fd->on_read_ready();
         if(r.write_ready)
-            fd.on_write_ready();
+            fd->on_write_ready();
         if(r.error)
-            fd.handle_error(false);
+            fd->handle_error(false);
     }
 
     DEBUG("step finished");

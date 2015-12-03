@@ -81,15 +81,15 @@ public:
     STREAM_FIELDS
 };
 
-using FDPtr = FD*;
-using StreamPtr = Stream*;
+using FDPtr = std::shared_ptr<FD>;
+using StreamPtr = std::shared_ptr<Stream>;
 
 class Reactor {
 private:
     friend class FD;
 
     EPoll epoll;
-    std::unordered_map<int, FD> fds;
+    std::unordered_map<int, FDPtr> fds;
     std::vector<std::function<void()> > scheduled_functions;
     bool want_exit = false;
     uint64_t epoch = 0;

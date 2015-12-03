@@ -6,8 +6,8 @@
 
 std::pair<StreamPtr, FDPtr> create_throttled_pair(Reactor& reactor, double speed, uint64_t buffsize, uint64_t delay) {
     std::vector<FDPtr> fds = fd_pair(reactor);
-    StreamPtr delayed = new DelayedStream(reactor, fds[0], buffsize, delay);
-    return {new ThrottledStream(reactor, delayed, speed), fds[1]};
+    StreamPtr delayed = std::make_shared<DelayedStream>(reactor, fds[0], buffsize, delay);
+    return {std::make_shared<ThrottledStream>(reactor, delayed, speed), fds[1]};
 }
 
 int main() {

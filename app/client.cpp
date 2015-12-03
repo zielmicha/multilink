@@ -47,7 +47,7 @@ struct Client {
 
     void add_bind_address(string bind_addr) {
         TCP::connect(reactor, this->addr, this->port, bind_addr).then([=](StreamPtr stream) {
-            auto tls_stream = new TlsStream(reactor, stream);
+            auto tls_stream = std::make_shared<TlsStream>(reactor, stream);
             tls_stream->handshake_as_client();
             tls_stream->set_psk_client_callback([this](const char* hint) {
                 return TlsStream::IdentityAndPsk

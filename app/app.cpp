@@ -75,10 +75,10 @@ public:
             StreamPtr s = take_fd(stream_fd);
             int delay = message["delay"].int_value();
             if(delay != 0)
-                s = new DelayedStream(reactor, s,
-                                      message["buffsize"].int_value(),
-                                      delay);
-            s = new ThrottledStream(reactor, s, message["mbps"].number_value());
+                s = std::make_shared<DelayedStream>(reactor, s,
+                                                    message["buffsize"].int_value(),
+                                                    delay);
+            s = std::make_shared<ThrottledStream>(reactor, s, message["mbps"].number_value());
             s->set_on_read_ready([](){});
             s->set_on_write_ready([](){});
             unused_stream_fds[stream_fd] = s;

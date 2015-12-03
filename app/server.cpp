@@ -118,7 +118,7 @@ struct Server {
 
         TCP::listen(reactor, listen_host, listen_port, [&](FDPtr fd) {
             LOG("incoming connection");
-            auto stream = new TlsStream(reactor, fd);
+            auto stream = std::make_shared<TlsStream>(reactor, fd);
             stream->set_cipher_list("PSK-AES256-CBC-SHA");
             stream->set_psk_server_callback(identity_callback);
             stream->handshake_as_server();

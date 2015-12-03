@@ -10,7 +10,7 @@ int main() {
     std::vector<FDPtr> fds = fd_pair(reactor);
 
     {
-        StreamPtr out = new ThrottledStream(reactor, fds[0], 0.00001);
+        StreamPtr out = std::make_shared<ThrottledStream>(reactor, fds[0], 0.00001);
         StreamPtr in = fds[1];
 
         out->set_on_read_ready(nothing);

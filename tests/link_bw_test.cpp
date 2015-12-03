@@ -12,8 +12,8 @@ int main() {
     vector<FDPtr> fds = fd_pair(reactor);
 
     {
-        ThrottledStream fd0(reactor, fds[0], 2);
-        Link a {reactor, &fd0};
+        auto fd0 = std::make_shared<ThrottledStream>(reactor, fds[0], 2);
+        Link a {reactor, fd0};
         a.name = "a";
         Link b {reactor, fds[1]};
         b.name = "b";
