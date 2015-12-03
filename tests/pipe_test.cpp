@@ -7,9 +7,9 @@
 
 int main() {
     Reactor reactor;
-    std::vector<FD*> fds1 = fd_pair(reactor);
-    std::vector<FD*> fds2 = fd_pair(reactor);
-    std::function<std::shared_ptr<FreePacketStream>(FD*)> make_packet_stream = [&](FD* fd) {
+    std::vector<FDPtr> fds1 = fd_pair(reactor);
+    std::vector<FDPtr> fds2 = fd_pair(reactor);
+    std::function<std::shared_ptr<FreePacketStream>(FDPtr)> make_packet_stream = [&](FDPtr fd) {
         return FreePacketStream::create(reactor, fd);
     };
     auto p1 = mapvector(fds1, make_packet_stream);

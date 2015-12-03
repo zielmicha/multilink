@@ -35,7 +35,7 @@ public:
 
         ops["provide-stream"] = [&]() {
             int num = message["num"].int_value();
-            FD* fd = stream->abandon();
+            FDPtr fd = stream->abandon();
             unused_stream_fds[num] = fd;
             ioutil::write(fd, ByteString::copy_from("ok\n"));
         };
@@ -43,7 +43,7 @@ public:
         ops["pass-stream"] = [&]() {
             int num = message["num"].int_value();
             stream->recv_fd().then<unit>([=](int fd) -> unit {
-                unused_stream_fds[num] = &reactor.take_fd(fd);
+                unused_stream_fds[num] = reactor.take_fd(fd);
                 ioutil::write(stream->abandon(), ByteString::copy_from("ok\n"));
                 return {};
             });

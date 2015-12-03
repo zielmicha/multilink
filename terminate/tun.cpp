@@ -33,7 +33,7 @@ Tun::Tun(Reactor& r, std::string name): reactor(r), buffer(MTU) {
     this->name = ifr.ifr_name;
     LOG("Created tun interface " << this->name << ".");
 
-    this->fd = &reactor.take_fd(fd);
+    this->fd = reactor.take_fd(fd);
     this->fd->on_read_ready = std::bind(&Tun::transport_ready_ready, this);
 
     this->fd->on_write_ready = []() {

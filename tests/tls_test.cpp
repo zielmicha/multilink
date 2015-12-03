@@ -9,7 +9,7 @@ int main() {
 
     TlsStream::init();
 
-    TCP::listen(reactor, "127.0.0.1", 8800, [&](FD* fd) {
+    TCP::listen(reactor, "127.0.0.1", 8800, [&](FDPtr fd) {
         LOG("incoming connection");
         auto stream = new TlsStream(reactor, fd);
         stream->on_read_ready = nothing;
@@ -24,7 +24,7 @@ int main() {
         ioutil::write(stream, ByteString::copy_from("helo"));
     }).ignore();
 
-    TCP::connect(reactor, "127.0.0.1", 8800).then([&](FD* fd) -> Future<ByteString> {
+    TCP::connect(reactor, "127.0.0.1", 8800).then([&](FDPtr fd) -> Future<ByteString> {
         LOG("connected");
         auto stream = new TlsStream(reactor, fd);
 

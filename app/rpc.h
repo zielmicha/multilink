@@ -22,7 +22,7 @@ private:
     RPCServer(Reactor& reactor,
               OnMessageCallback on_message);
 
-    void accept(FD* sock);
+    void accept(FDPtr sock);
     void read_message(std::shared_ptr<RPCStream> stream);
 public:
     static std::shared_ptr<RPCServer> create(
@@ -36,7 +36,7 @@ public:
 };
 
 class RPCStream {
-    FD* fd;
+    FDPtr fd;
     Reactor& reactor;
     bool abandoned = false;
 
@@ -45,7 +45,7 @@ class RPCStream {
 
     friend class RPCServer;
 public:
-    FD* abandon() {
+    FDPtr abandon() {
         abandoned = true;
         return fd;
     }

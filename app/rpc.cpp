@@ -11,7 +11,7 @@ RPCServer::RPCServer(Reactor& reactor, OnMessageCallback on_message):
 std::shared_ptr<RPCServer> RPCServer::create(
     Reactor& reactor, std::string path, OnMessageCallback on_message) {
     std::shared_ptr<RPCServer> srv {new RPCServer(reactor, on_message)};
-    UnixSocket::listen(reactor, path, [srv](FD* fd) {
+    UnixSocket::listen(reactor, path, [srv](FDPtr fd) {
         srv->accept(fd);
     });
     return srv;
@@ -20,13 +20,13 @@ std::shared_ptr<RPCServer> RPCServer::create(
 std::shared_ptr<RPCServer> RPCServer::create(
     Reactor& reactor, int fd, OnMessageCallback on_message) {
     std::shared_ptr<RPCServer> srv {new RPCServer(reactor, on_message)};
-    UnixSocket::listen(reactor, &reactor.take_fd(fd), [srv](FDPtr fd) {
+    UnixSocket::listen(reactor, reactor.take_fd(fd), [srv](FDPtr fd) {
         srv->accept(fd);
     });
     return srv;
 }
 
-void RPCServer::accept(FD* fd) {
+void RPCServer::accept(FDPtr fd) {
     std::shared_ptr<RPCStream> stream {new RPCStream(reactor)};
     std::cerr << "accepted unix connection fd=" << fd->fileno() << std::endl;
     stream->fd = fd;

@@ -6,7 +6,7 @@
 
 int main() {
     Reactor reactor;
-    std::vector<FD*> fds = fd_pair(reactor);
+    std::vector<FDPtr> fds = fd_pair(reactor);
 
     auto pstream = FreePacketStream::create(reactor, fds[1]);
 

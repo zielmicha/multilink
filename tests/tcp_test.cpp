@@ -1,7 +1,7 @@
 #include "libreactor/logging.h"
 #include "libreactor/tcp.h"
 
-void test_read(FD* fd) {
+void test_read(FDPtr fd) {
     while(true) {
         StackBuffer<10> buff;
         Buffer data = fd->read(buff);
@@ -14,7 +14,7 @@ void test_read(FD* fd) {
 int main() {
     Reactor reactor;
     TCP::connect(reactor, "127.0.0.1", 8000).on_success_or_failure(
-        [](FD* fd) {
+        [](FDPtr fd) {
             LOG("connected");
             fd->on_read_ready = [fd]() {
                 test_read(fd);
@@ -24,7 +24,7 @@ int main() {
             LOG("connection failed: " << ex->what());
         });
 
-    TCP::listen(reactor, "127.0.0.1", 8002, [](FD* fd) {
+    TCP::listen(reactor, "127.0.0.1", 8002, [](FDPtr fd) {
             LOG("client connected");
             fd->on_read_ready = [fd]() {
                 test_read(fd);

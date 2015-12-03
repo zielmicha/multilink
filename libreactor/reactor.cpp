@@ -99,7 +99,7 @@ void nop() {}
 
 FD::FD(Reactor& r, int fd): reactor(r), fd(fd), on_read_ready(nop), on_write_ready(nop), on_error(nop) {}
 
-FD& Reactor::take_fd(int fd) {
+FDPtr Reactor::take_fd(int fd) {
     setnonblocking(fd);
     typedef decltype(fds) fds_type;
     fds.insert(fds_type::value_type(fd, FD(*this, fd)));
@@ -107,7 +107,7 @@ FD& Reactor::take_fd(int fd) {
     if(!epoll.add(fd)) errno_to_exception();
     FD& fd_obj = fds.find(fd)->second;
     fd_obj.set_close_on_exec(true);
-    return fd_obj;
+    return &fd_obj;
 }
 
 Reactor::Reactor() {

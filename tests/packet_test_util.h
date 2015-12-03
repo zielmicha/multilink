@@ -6,7 +6,7 @@
 
 std::vector<std::shared_ptr<PacketStream> > packet_stream_pair(Reactor& reactor) {
     auto p = fd_pair(reactor);
-    return mapvector(p, [&](FD* fd) -> std::shared_ptr<PacketStream> {
+    return mapvector(p, [&](FDPtr fd) -> std::shared_ptr<PacketStream> {
         return LengthPacketStream::create(reactor, fd);
     });
 }

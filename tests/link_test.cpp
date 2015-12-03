@@ -7,7 +7,7 @@ using namespace std;
 
 int main() {
     Reactor reactor;
-    vector<FD*> fds = fd_pair(reactor);
+    vector<FDPtr> fds = fd_pair(reactor);
 
     {
         Link a {reactor, fds[0]};

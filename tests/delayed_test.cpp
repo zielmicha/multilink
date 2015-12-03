@@ -6,7 +6,7 @@
 
 int main() {
     Reactor reactor;
-    std::vector<FD*> fds = fd_pair(reactor);
+    std::vector<FDPtr> fds = fd_pair(reactor);
 
     {
         StreamPtr out = new DelayedStream(reactor, fds[0], 100, 1000 * 1000);

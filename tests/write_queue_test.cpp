@@ -8,7 +8,7 @@
 int main() {
     Reactor reactor;
 
-    std::vector<FD*> fds = fd_pair(reactor);
+    std::vector<FDPtr> fds = fd_pair(reactor);
     Timer timer(reactor);
 
     fds[1]->on_read_ready = [&]() {

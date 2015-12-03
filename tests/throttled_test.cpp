@@ -7,7 +7,7 @@ void write_test(Reactor& reactor, StreamPtr out, int count);
 
 int main() {
     Reactor reactor;
-    std::vector<FD*> fds = fd_pair(reactor);
+    std::vector<FDPtr> fds = fd_pair(reactor);
 
     {
         StreamPtr out = new ThrottledStream(reactor, fds[0], 0.00001);

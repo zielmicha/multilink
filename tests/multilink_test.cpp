@@ -8,7 +8,7 @@ int main() {
     auto left = std::make_shared<Multilink::Multilink>(reactor);
     auto right = std::make_shared<Multilink::Multilink>(reactor);
 
-    std::vector<FD*> fds = fd_pair(reactor);
+    std::vector<FDPtr> fds = fd_pair(reactor);
     Timer timer(reactor);
 
     left->add_link(fds[0], "left");

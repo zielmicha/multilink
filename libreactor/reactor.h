@@ -97,7 +97,7 @@ public:
     Reactor(const Reactor& r) = delete;
     Reactor();
 
-    FD& take_fd(int fd);
+    FDPtr take_fd(int fd);
 
     void schedule(std::function<void()> func);
 

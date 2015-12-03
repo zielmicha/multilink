@@ -5,7 +5,7 @@
 int main() {
     Reactor reactor;
 
-    std::vector<FD*> fds = fd_pair(reactor);
+    std::vector<FDPtr> fds = fd_pair(reactor);
 
     ioutil::write(fds[0], ByteString::copy_from("hello")).wait(reactor);
     ioutil::read(fds[1], 4).then<ByteString>([&](ByteString ret) {

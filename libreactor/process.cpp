@@ -92,8 +92,8 @@ int Process::start_process(const Popen& options) {
     return pid;
 }
 
-std::array<FD*, 3> Popen::init_pipe_fds() {
-    std::array<FD*, 3> out;
+std::array<FDPtr, 3> Popen::init_pipe_fds() {
+    std::array<FDPtr, 3> out;
     bool isread[3] = {true, false, false};
     for(int i=0; i<3; i++) {
         if(target_fds[i] == -1) {
@@ -103,7 +103,7 @@ std::array<FD*, 3> Popen::init_pipe_fds() {
             if(isread[i])
                 std::swap(pipefd[0], pipefd[1]);
             target_fds[i] = pipefd[1];
-            out[i] = &reactor.take_fd(pipefd[0]);
+            out[i] = reactor.take_fd(pipefd[0]);
         } else {
             out[i] = nullptr;
         }

@@ -9,7 +9,7 @@ using namespace std;
 
 int main() {
     Reactor reactor;
-    vector<FD*> fds = fd_pair(reactor);
+    vector<FDPtr> fds = fd_pair(reactor);
 
     {
         ThrottledStream fd0(reactor, fds[0], 2);

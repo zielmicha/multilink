@@ -116,7 +116,7 @@ struct Server {
         this->target_port = target_port;
         this->target_host = target_host;
 
-        TCP::listen(reactor, listen_host, listen_port, [&](FD* fd) {
+        TCP::listen(reactor, listen_host, listen_port, [&](FDPtr fd) {
             LOG("incoming connection");
             auto stream = new TlsStream(reactor, fd);
             stream->set_cipher_list("PSK-AES256-CBC-SHA");

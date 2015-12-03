@@ -35,7 +35,7 @@ class Popen {
     std::vector<std::string> arguments;
     int target_fds[3];
 
-    std::array<FD*, 3> init_pipe_fds();
+    std::array<FDPtr, 3> init_pipe_fds();
 public:
     Popen(Reactor& reactor);
     Popen(Reactor& reactor, std::string executable);
@@ -72,9 +72,9 @@ public:
     void wait(std::function<void(int)> callback);
 
     int pid;
-    FD* stdin;
-    FD* stdout;
-    FD* stderr;
+    FDPtr stdin;
+    FDPtr stdout;
+    FDPtr stderr;
 };
 
 #endif

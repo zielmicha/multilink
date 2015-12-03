@@ -4,7 +4,7 @@
 #include "libreactor/reactor.h"
 
 class Timer {
-    FD* fd;
+    FDPtr fd;
 
     struct Event {
         uint64_t time;

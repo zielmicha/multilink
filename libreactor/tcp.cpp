@@ -22,14 +22,14 @@ namespace TCP {
             errno_to_exception();
     }
 
-    Future<FD*> connect(Reactor& reactor, std::string addr, int port, std::string bind) {
+    Future<FDPtr> connect(Reactor& reactor, std::string addr, int port, std::string bind) {
         int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
         set_nodelay(sockfd, true);
 
-        FD* fd = &reactor.take_fd(sockfd);
+        FDPtr fd = reactor.take_fd(sockfd);
 
-        Completer<FD*> completer;
+        Completer<FDPtr> completer;
 
         if (!bind.empty()) {
             auto bind_addr = make_addr(bind, 0);
@@ -77,11 +77,11 @@ namespace TCP {
         return completer.future();
     }
 
-    Future<unit> listen(Reactor& reactor, std::string addr, int port, std::function<void(FD*)> accept_cb) {
+    Future<unit> listen(Reactor& reactor, std::string addr, int port, std::function<void(FDPtr)> accept_cb) {
         struct sockaddr_in servaddr = {0};
         int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         setnonblocking(sockfd);
-        FD* fd = &reactor.take_fd(sockfd);
+        FDPtr fd = reactor.take_fd(sockfd);
 
         servaddr.sin_family = AF_INET;
         servaddr.sin_addr.s_addr = inet_addr(addr.c_str());
@@ -109,7 +109,7 @@ namespace TCP {
                         errno_to_exception();
                 }
                 set_nodelay(client, true);
-                accept_cb(&reactor.take_fd(client));
+                accept_cb(reactor.take_fd(client));
             }
         };
 

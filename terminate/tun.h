@@ -10,7 +10,7 @@
 class Tun : public AbstractPacketStream {
 protected:
     Reactor& reactor;
-    FD* fd;
+    FDPtr fd;
     AllocBuffer buffer;
 
     void transport_ready_ready();

@@ -5,7 +5,7 @@
 
 Timer::Timer(Reactor& reactor) {
     int ffd = timerfd_create(CLOCK_MONOTONIC, 0);
-    fd = &reactor.take_fd(ffd);
+    fd = reactor.take_fd(ffd);
     fd->on_read_ready = std::bind(&Timer::timer_ready, this);
 }
 
