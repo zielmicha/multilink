@@ -1,6 +1,7 @@
 #ifndef TERMINATE_IP_H_
 #define TERMINATE_IP_H_
 #include <stdint.h>
+#include <string>
 
 struct IpAddress {
     enum { v4, v6 } type;
@@ -21,6 +22,18 @@ struct IpAddress {
         ret.type = v4;
         memcpy(ret.addr6, a, sizeof(ret.addr6));
         return ret;
+    }
+
+    std::string to_string() {
+        switch (type) {
+        case v4:
+            char buf[20];
+            sprintf(buf, "%d.%d.%d.%d", addr4 & 0xFF, (addr4 >> 8) & 0xFF, (addr4 >> 16) & 0xFF, (addr4 >> 24) & 0xFF);
+            return buf;
+        case v6:
+        default:
+            abort();
+        }
     }
 };
 

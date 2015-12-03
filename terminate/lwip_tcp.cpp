@@ -1,3 +1,5 @@
+#define LOG_NAME "lwip_tcp"
+#include "libreactor/logging.h"
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "terminate/lwip_tcp.h"
@@ -10,18 +12,46 @@ extern "C" {
 #include <lwip/err.h>
 }
 
+const int DEVICE_MTU = 1500; // TODO: think about this
+
 class NetworkInterfaceImpl {
     netif iface;
+    AllocBuffer output_buffer;
+
     void output(IpAddress ip, pbuf* p);
 public:
     NetworkInterfaceImpl();
+    ~NetworkInterfaceImpl();
+
+    std::function<void(IpAddress, Buffer)> on_send_packet;
+
+    void on_recv(const Buffer buffer);
 
     static NetworkInterfaceImpl* get(netif* n) {
-        return (NetworkInterfaceImpl*)(((char *)n) - offsetof(NetworkInterfaceImpl, iface));
+        return (NetworkInterfaceImpl*) n->state;
     }
 };
 
-NetworkInterfaceImpl::NetworkInterfaceImpl() {
+NetworkInterface::NetworkInterface() {
+    lwip_init();
+    impl = new NetworkInterfaceImpl();
+}
+
+NetworkInterface::~NetworkInterface() {
+    delete impl;
+}
+
+void NetworkInterface::set_on_send_packet(std::function<void(IpAddress, Buffer)> callback) {
+    impl->on_send_packet = callback;
+}
+
+void NetworkInterface::on_recv(const Buffer data) {
+    impl->on_recv(data);
+}
+
+// ---- NetworkInterfaceImpl
+
+NetworkInterfaceImpl::NetworkInterfaceImpl(): output_buffer(DEVICE_MTU) {
     ip_addr_t addr;
     addr.addr = inet_addr("10.155.0.2");
     ip_addr_t netmask;
@@ -45,21 +75,58 @@ NetworkInterfaceImpl::NetworkInterfaceImpl() {
     };
 
     auto netif_input_func = [](pbuf* p, netif* in) -> err_t {
+        // Passes packet from netif to the TCP driver
+        if (p->len == 0) {
+            ERROR("empty packet");
+            pbuf_free(p);
+            return ERR_OK;
+        }
+
+        // extract IP version
+        int version = (((uint8_t*) p->payload)[0] >> 4);
+
+        if (version == 4)
+            return ip_input(p, in);
+        else if (version == 6)
+            return ip6_input(p, in);
+        else
+            LOG("unknown IP version " << version);
+
+        pbuf_free(p);
         return ERR_OK;
     };
 
-    bool ok = netif_add(&iface, &addr, &netmask, &gw, NULL, netif_init_func, netif_input_func);
+    bool ok = netif_add(&iface, &addr, &netmask, &gw, (void*) this, netif_init_func, netif_input_func);
     assert (ok);
 
     netif_set_up(&iface);
     netif_set_pretend_tcp(&iface, 1);
     netif_set_default(&iface);
-
 }
 
-NetworkInterface::NetworkInterface() {
-    lwip_init();
-    impl = new NetworkInterfaceImpl();
+void NetworkInterfaceImpl::output(IpAddress ip, pbuf* p) {
+    if (p->tot_len > DEVICE_MTU) {
+        ERROR("lwIP tried to output packet > DEVICE_MTU");
+        return;
+    }
+
+    Buffer buf = output_buffer.as_buffer().slice(0, p->tot_len);
+    pbuf_copy_partial(p, buf.data, buf.size, 0);
+
+    on_send_packet(ip, buf);
+}
+
+void NetworkInterfaceImpl::on_recv(const Buffer data) {
+    if (data.size > DEVICE_MTU) {
+        LOG("packet too big (" << data.size << ")");
+        return;
+    }
+    pbuf* p = pbuf_alloc(PBUF_IP, data.size, PBUF_RAM);
+    iface.input(p, &iface);
+}
+
+NetworkInterfaceImpl::~NetworkInterfaceImpl() {
+    netif_remove(&iface);
 }
 
 TcpListener::TcpListener() {
@@ -81,7 +148,7 @@ TcpListener::TcpListener() {
 
 void TcpListener::accept(tcp_pcb* new_pcb, err_t err) {
     tcp_accepted(listener);
-    //TcpStream(new_pcb)...
+    on_accept(std::make_shared<TcpStream>(new_pcb));
 }
 
 TcpListener::~TcpListener() {
@@ -110,6 +177,30 @@ void TcpStream::recv_from_pcb(pbuf* buf) {
 
     if (was_empty)
         on_read_ready();
+}
+
+IpAddress TcpStream::get_remote_address() {
+    if(PCB_ISIPV6(pcb)) {
+        return IpAddress::make6(pcb->remote_ip.ip6.addr);
+    } else {
+        return IpAddress::make4(pcb->remote_ip.ip4.addr);
+    }
+}
+
+uint16_t TcpStream::get_remote_port() {
+    return pcb->remote_port;
+}
+
+IpAddress TcpStream::get_local_address() {
+    if(PCB_ISIPV6(pcb)) {
+        return IpAddress::make6(pcb->local_ip.ip6.addr);
+    } else {
+        return IpAddress::make4(pcb->local_ip.ip4.addr);
+    }
+}
+
+uint16_t TcpStream::get_local_port() {
+    return pcb->local_port;
 }
 
 Buffer TcpStream::read(Buffer out) {

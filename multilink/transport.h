@@ -64,6 +64,9 @@ public:
         std::shared_ptr<PacketStream> network_stream,
         TargetCreator target_creator, size_t mtu);
 
+    static const size_t HEADER_SIZE = 16;
+
+    size_t get_mtu() { return mtu; }
     void add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > stream);
 };
 

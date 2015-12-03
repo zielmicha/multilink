@@ -8,6 +8,7 @@
 #include "multilink/transport.h"
 #include "libreactor/tls.h"
 #include "libreactor/ioutil.h"
+#include "terminate/terminate.h"
 
 namespace po = boost::program_options;
 using std::string;
@@ -26,10 +27,20 @@ struct Client {
         client_id = ByteString::copy_from(hex_decode(random_hex_string(32)));
     }
 
+    const size_t TRANSPORT_MTU = (size_t) Multilink::MULTILINK_MTU - Transport::HEADER_SIZE;
+
     void create_listening_target(int port) {
         auto target_creator = unknown_stream_target_creator();
         std::shared_ptr<Transport> target = Transport::create(reactor, ml,
-                                                              target_creator, Multilink::MULTILINK_MTU);
+                                                              target_creator, TRANSPORT_MTU);
+
+        create_listening_tcp_target_creator(reactor, target, "127.0.0.1", port);
+    }
+
+    void create_terminate_target(string tun_name) {
+        auto target_creator = unknown_stream_target_creator();
+        std::shared_ptr<Transport> target = Transport::create(reactor, ml,
+                                                              target_creator, TRANSPORT_MTU);
 
         create_listening_tcp_target_creator(reactor, target, "127.0.0.1", port);
     }
@@ -64,7 +75,9 @@ int main(int argc, char** argv) {
     desc.add_options()
         ("help", "produce help message")
         ("listen-port,P",
-         po::value<int>()->default_value(5500), "port to listen to")
+         po::value<int>(), "port to listen to (if not using tun transport)")
+        ("tun-name,t",
+         po::value<string>(), "tun name (for tun transport)")
         ("connect-address,c",
          po::value<string>()->default_value("127.0.0.1"), "address to connect to")
         ("connect-port,p",
@@ -80,7 +93,7 @@ int main(int argc, char** argv) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help") || vm["static"].empty()) {
+    if (vm.count("help") || vm["static"].empty() || (vm["listen-port"].empty() ^ vm["tun-name"].empty())) {
         std::cout << desc << "\n";
         return 0;
     }
@@ -90,7 +103,13 @@ int main(int argc, char** argv) {
     Client client (vm["connect-address"].as<string>(), vm["connect-port"].as<int>(),
                    vm["identity"].as<string>(),
                    hex_decode(vm["psk"].as<string>()));
-    client.create_listening_target(vm["listen-port"].as<int>());
+
+    if (!vm["listen-port"].empty()) {
+        client.create_listening_target(vm["listen-port"].as<int>());
+    } else {
+        client.create_terminate_target(vm["tun-name"].as<string>());
+    }
+
     for (string s : vm["static"].as<std::vector<string> >()) {
         client.add_bind_address(s);
     }

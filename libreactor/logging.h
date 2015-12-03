@@ -20,6 +20,8 @@
 #define DEBUG(args...)
 #endif
 
+#define ERROR(args...) LOG(args)
+
 std::string current_time();
 void setup_crash_handlers();
 std::string url_encode(std::string value);

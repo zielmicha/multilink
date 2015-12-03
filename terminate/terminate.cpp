@@ -2,81 +2,30 @@
 #include "libreactor/logging.h"
 #include "libreactor/tcp.h"
 #include "libreactor/packet_stream_util.h"
+#include "libreactor/bytestring.h"
 #include "terminate/terminate.h"
-
-class HeaderPacketStream : public AbstractPacketStream, public std::enable_shared_from_this<HeaderPacketStream> {
-    typedef std::function<Future<PacketStreamPtr>(Buffer)> Callback;
-    Callback callback;
-    PacketStreamPtr new_stream = nullptr;
-
-public:
-    HeaderPacketStream(Callback callback): callback(callback) {}
-
-    void set_on_recv_ready(std::function<void()> f) {
-        if (new_stream) new_stream->set_on_recv_ready(f);
-        AbstractPacketStream::set_on_recv_ready(f);
-    }
-
-    void set_on_send_ready(std::function<void()> f) {
-        if (new_stream) new_stream->set_on_send_ready(f);
-        AbstractPacketStream::set_on_send_ready(f);
-    }
-
-    void set_on_error(std::function<void()> f) {
-        if (new_stream) new_stream->set_on_error(f);
-        AbstractPacketStream::set_on_error(f);
-    }
-
-    size_t get_send_offset() {
-        return 0;
-    }
-
-    void close() { // FIXME: race condition
-        if (new_stream)
-            new_stream->close();
-    }
-
-    void send(Buffer data) {
-        if (new_stream) {
-            new_stream->send(data);
-        } else {
-            auto self = this->shared_from_this();
-            callback(data).then([self](PacketStreamPtr stream) -> unit {
-                self->new_stream = stream;
-                self->on_send_ready();
-                self->on_recv_ready();
-                return {};
-            }).ignore();
-            callback = nullptr;
-        }
-    }
-
-    void send_with_offset(Buffer data) {
-        send(data);
-    }
-
-    bool is_send_ready() {
-        if (new_stream)
-            return new_stream->is_send_ready();
-        else
-            return callback ? true : false;
-    }
-
-    optional<Buffer> recv() {
-        if (new_stream)
-            return new_stream->recv();
-        else
-            return optional<Buffer>();
-    }
-};
+#include "terminate/terminate_misc.h"
 
 Terminator::Terminator(Reactor& reactor): reactor(reactor) {
+}
 
+void Terminator::tcp_accepted(TcpStreamPtr stream) {
+    std::string addr = stream->get_local_address().to_string();
+    int port = stream->get_local_port();
+
+    ByteString header = ByteString::copy_from("tcp\n" + addr + ":" + std::to_string(port));
+
+    auto result_stream = std::make_shared<ReadHeaderPacketStream>(header, FreePacketStream::create(reactor, nullptr, transport.lock()->get_mtu()));
+    transport.lock()->add_target(id_counter ++, Future<PacketStreamPtr>::make_immediate(result_stream));
 }
 
 TerminatorPtr Terminator::create(Reactor& reactor, bool is_server) {
     TerminatorPtr self (new Terminator(reactor));
     self->is_server = is_server;
+    if (!is_server)
+        id_counter = 0;
+    else
+        id_counter = (1 << 1ull);
     return self;
 }
 
@@ -102,7 +51,12 @@ Future<PacketStreamPtr> Terminator::create_target_2(Buffer header) {
         if (pos == -1) {
             return Future<PacketStreamPtr>::make_exception("bad tcp address format");
         }
-        int port = atoi(rest.substr(pos + 1, rest.size() - pos - 1).c_str()); // TODO: error detection?
+        int port;
+        try {
+            port = stoi(rest.substr(pos + 1, rest.size() - pos - 1));
+        } catch(std::exception) {
+            return Future<PacketStreamPtr>::make_exception("bad tcp port format");
+        }
         std::string addr = rest.substr(0, pos);
         return TCP::connect(reactor, addr, port).then([this](StreamPtr stream) -> PacketStreamPtr {
             return FreePacketStream::create(reactor, stream);
@@ -119,9 +73,22 @@ void Terminator::set_transport(TransportPtr transport) {
 
 void Terminator::set_tun(TunPtr tun) {
     this->tun = tun;
-    tun->on_recv = std::bind(&Terminator::tun_recv, shared_from_this(), std::placeholders::_1);
+
+    network_interface = std::make_shared<NetworkInterface>();
+    network_interface->set_on_send_packet([this](IpAddress addr, Buffer buf) {
+        this->tun.lock()->send(buf);
+    });
+    tcp_listener = std::make_shared<TcpListener>();
+    tcp_listener->on_accept = std::bind(&Terminator::tcp_accepted, this, std::placeholders::_1);
+
+    tun->set_on_recv_ready(std::bind(&Terminator::tun_recv_ready, shared_from_this()));
 }
 
-void Terminator::tun_recv(Buffer buffer) {
+void Terminator::tun_recv_ready() {
+    while (true) {
+        auto packet = tun.lock()->recv();
+        if (!packet) break;
 
+        network_interface->on_recv(*packet);
+    }
 }

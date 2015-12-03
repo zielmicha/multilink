@@ -17,7 +17,7 @@
 
 const int MTU = 4096;
 
-Tun::Tun(Reactor& r, std::string name): reactor(r) {
+Tun::Tun(Reactor& r, std::string name): reactor(r), buffer(MTU) {
     struct ifreq ifr;
     int fd;
 
@@ -34,20 +34,29 @@ Tun::Tun(Reactor& r, std::string name): reactor(r) {
     LOG("Created tun interface " << this->name << ".");
 
     this->fd = &reactor.take_fd(fd);
-    this->fd->on_read_ready = [this]() {
-        on_read();
-    };
+    this->fd->on_read_ready = std::bind(&Tun::transport_ready_ready, this);
 
     this->fd->on_write_ready = []() {
         LOG("can write");
     };
 }
 
-void Tun::on_read() {
-    StackBuffer<MTU> buffer;
-    while(true) {
-        Buffer data = fd->read(buffer);
-        if(data.size == 0) break;
-        on_recv(buffer);
-    }
+void Tun::transport_ready_ready() {
+    on_recv_ready();
+}
+
+optional<Buffer> Tun::recv() {
+    Buffer data = fd->read(buffer.as_buffer());
+    if(data.size == 0) return optional<Buffer>();
+    return data;
+}
+
+bool Tun::is_send_ready() {
+    return true;
+}
+
+void Tun::send(const Buffer data) {
+    size_t s = fd->write(data);
+    if (s != data.size)
+        ERROR("partial write to tun (" << s << " out of " << data.size << ")");
 }

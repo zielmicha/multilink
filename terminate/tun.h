@@ -5,18 +5,22 @@
 
 #include "libreactor/common.h"
 #include "libreactor/reactor.h"
+#include "libreactor/packet_stream.h"
 
-class Tun {
+class Tun : public AbstractPacketStream {
 protected:
     Reactor& reactor;
     FD* fd;
+    AllocBuffer buffer;
 
-    void on_read();
+    void transport_ready_ready();
 public:
     Tun(Reactor& r, std::string name);
     Tun(const Tun& t) = delete;
 
-    std::function<void(Buffer)> on_recv;
+    bool is_send_ready();
+    void send(Buffer buffer);
+    optional<Buffer> recv();
     std::string name;
 };
 

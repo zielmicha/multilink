@@ -31,3 +31,8 @@ Multilink is an implementation of my [stream-based aggregation of unreliable het
   ```
 
   If build fails with linker error mentioning `boost::program_options`, it may be a problem with your compiler version.
+
+## Bundled libraries
+
+* lwip (`deps/lwip`) - with modifications from BadVPN. The `lwip_tcp.cpp` is inspired by the BadVPN *tun2socks*.
+* json11 (`deps/json11`) - JSON manipulation librarary from Dropbox.
