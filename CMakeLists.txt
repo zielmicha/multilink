@@ -7,7 +7,7 @@ set(CMAKE_C_COMPILER "/usr/bin/gcc")
 # set(OPT_COMMON "-fsanitize=address -fsanitize=address -D_GLIBCXX_DEBUG")
 set(OPT_COMMON "")
 # for clang++: -Wno-unused-private-field
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -fdiagnostics-color -Og ${OPT_COMMON}")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -fdiagnostics-color -Og ${OPT_COMMON} -Wno-literal-suffix")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt ${OPT_COMMON}")
 
 find_package (Boost 1.55.0 REQUIRED COMPONENTS program_options)
@@ -51,7 +51,8 @@ include(deps/lwip/CMakeLists.txt)
 
 add_library(terminate STATIC
   terminate/tun.cpp
-  terminate/terminate.cpp)
+  terminate/terminate.cpp
+  terminate/lwip_tcp.cpp)
 
 include(tests/CMakeLists.txt)
 
