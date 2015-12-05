@@ -1,4 +1,4 @@
-#define LOG_NAME "lwip_tcp"
+#define LOGGER_NAME "lwip_tcp"
 #include "libreactor/logging.h"
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -51,11 +51,11 @@ void NetworkInterface::on_recv(const Buffer data) {
 
 // ---- NetworkInterfaceImpl
 
-NetworkInterfaceImpl::NetworkInterfaceImpl(): output_buffer(DEVICE_MTU) {
+NetworkInterfaceImpl::NetworkInterfaceImpl(): output_buffer(DEVICE_MTU + 4) {
     ip_addr_t addr;
-    addr.addr = inet_addr("10.155.0.2");
+    addr.addr = inet_addr("10.77.0.2");
     ip_addr_t netmask;
-    netmask.addr = inet_addr("255.255.255.255");
+    netmask.addr = inet_addr("255.255.255.0");
     ip_addr_t gw;
     ip_addr_set_any(&gw);
 
@@ -81,6 +81,9 @@ NetworkInterfaceImpl::NetworkInterfaceImpl(): output_buffer(DEVICE_MTU) {
             pbuf_free(p);
             return ERR_OK;
         }
+
+        AllocBuffer buf (p->tot_len);
+        pbuf_copy_partial(p, buf.as_buffer().data, buf.as_buffer().size, 0);
 
         // extract IP version
         int version = (((uint8_t*) p->payload)[0] >> 4);
@@ -110,8 +113,15 @@ void NetworkInterfaceImpl::output(IpAddress ip, pbuf* p) {
         return;
     }
 
-    Buffer buf = output_buffer.as_buffer().slice(0, p->tot_len);
-    pbuf_copy_partial(p, buf.data, buf.size, 0);
+    Buffer buf = output_buffer.as_buffer().slice(0, p->tot_len + 4);
+
+    // prepare headers for TUN
+    buf.convert<uint16_t>(0) = 0;
+    buf.convert<uint16_t>(2) =
+        htons(ip.type == IpAddress::v4 ? 0x0800 : 0x86DD);
+
+    Buffer data_buf = buf.slice(4, p->tot_len);
+    pbuf_copy_partial(p, data_buf.data, data_buf.size, 0);
 
     on_send_packet(ip, buf);
 }
@@ -121,7 +131,10 @@ void NetworkInterfaceImpl::on_recv(const Buffer data) {
         LOG("packet too big (" << data.size << ")");
         return;
     }
-    pbuf* p = pbuf_alloc(PBUF_IP, data.size, PBUF_RAM);
+
+    const Buffer body = data.slice(4);
+    pbuf* p = pbuf_alloc(PBUF_IP, body.size, PBUF_RAM);
+    memcpy(p->payload, body.data, body.size);
     iface.input(p, &iface);
 }
 

@@ -7,7 +7,7 @@
 #include "libreactor/reactor.h"
 #include "libreactor/packet_stream.h"
 
-class Tun : public AbstractPacketStream {
+class Tun : public AbstractPacketStream, public std::enable_shared_from_this<Tun> {
 protected:
     Reactor& reactor;
     FDPtr fd;
@@ -15,12 +15,17 @@ protected:
 
     void transport_ready_ready();
 public:
-    Tun(Reactor& r, std::string name);
+    Tun(Reactor& r);
     Tun(const Tun& t) = delete;
 
+    static std::shared_ptr<Tun> create(Reactor& r, std::string name);
+
     bool is_send_ready();
-    void send(Buffer buffer);
+    void send_with_offset(Buffer data) { send(data); }
+    size_t get_send_offset() { return 0; }
+    void send(Buffer data);
     optional<Buffer> recv();
+    void close();
     std::string name;
 };
 

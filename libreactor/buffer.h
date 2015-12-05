@@ -44,6 +44,14 @@ public:
         return slice(start, size - start);
     }
 
+    const Buffer slice(size_t start) const {
+        return ((Buffer*)this)->slice(start);
+    }
+
+    const Buffer slice(size_t start, size_t size) const {
+        return ((Buffer*)this)->slice(start, size);
+    }
+
     void copy_to(Buffer target) const {
         assert(size <= target.size);
         memcpy(target.data, data, size);

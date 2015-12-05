@@ -17,7 +17,11 @@
 
 const int MTU = 4096;
 
-Tun::Tun(Reactor& r, std::string name): reactor(r), buffer(MTU) {
+Tun::Tun(Reactor& r): reactor(r), buffer(MTU) {}
+
+TunPtr Tun::create(Reactor& reactor, std::string name) {
+    TunPtr self = std::make_shared<Tun>(reactor);
+
     struct ifreq ifr;
     int fd;
 
@@ -30,15 +34,15 @@ Tun::Tun(Reactor& r, std::string name): reactor(r), buffer(MTU) {
     if (ioctl(fd, TUNSETIFF, (void *)&ifr) < 0)
         errno_to_exception();
 
-    this->name = ifr.ifr_name;
-    LOG("Created tun interface " << this->name << ".");
+    self->name = ifr.ifr_name;
+    LOG("Created tun interface " << self->name << ".");
 
-    this->fd = reactor.take_fd(fd);
-    this->fd->on_read_ready = std::bind(&Tun::transport_ready_ready, this);
+    self->fd = reactor.take_fd(fd);
+    self->fd->on_read_ready = std::bind(&Tun::transport_ready_ready, self);
 
-    this->fd->on_write_ready = []() {
-        LOG("can write");
-    };
+    self->fd->on_write_ready = []() {};
+
+    return self;
 }
 
 void Tun::transport_ready_ready() {
@@ -59,4 +63,8 @@ void Tun::send(const Buffer data) {
     size_t s = fd->write(data);
     if (s != data.size)
         ERROR("partial write to tun (" << s << " out of " << data.size << ")");
+}
+
+void Tun::close() {
+    fd->close();
 }

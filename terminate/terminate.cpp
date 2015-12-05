@@ -12,6 +12,7 @@ Terminator::Terminator(Reactor& reactor): reactor(reactor) {
 void Terminator::tcp_accepted(TcpStreamPtr stream) {
     std::string addr = stream->get_local_address().to_string();
     int port = stream->get_local_port();
+    LOG("TCP connection to " << addr << ":" << port);
 
     ByteString header = ByteString::copy_from("tcp\n" + addr + ":" + std::to_string(port));
 
@@ -23,9 +24,9 @@ TerminatorPtr Terminator::create(Reactor& reactor, bool is_server) {
     TerminatorPtr self (new Terminator(reactor));
     self->is_server = is_server;
     if (!is_server)
-        id_counter = 0;
+        self->id_counter = 100;
     else
-        id_counter = (1 << 1ull);
+        self->id_counter = (1 << 1ull) + 100;
     return self;
 }
 

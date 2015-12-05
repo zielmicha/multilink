@@ -8,6 +8,7 @@
 #include "multilink/transport.h"
 #include "libreactor/tls.h"
 #include "libreactor/ioutil.h"
+#include "libreactor/process.h"
 #include "terminate/terminate.h"
 
 namespace po = boost::program_options;
@@ -38,11 +39,22 @@ struct Client {
     }
 
     void create_terminate_target(string tun_name) {
-        auto target_creator = unknown_stream_target_creator();
+        std::shared_ptr<Terminator> terminator = Terminator::create(reactor, false);
+        std::shared_ptr<Tun> tun = Tun::create(reactor, tun_name);
+        terminator->set_tun(tun);
+
+        TargetCreator target_creator = std::bind(&Terminator::create_target, terminator,
+                                                 std::placeholders::_1);
+
+        Popen(reactor, {"ip", "link", "set", "dev", tun_name, "up"})
+            .check_call().wait(reactor);
+
+        Popen(reactor, {"ip", "addr", "add", "dev", tun_name, "10.77.0.1", "peer", "10.77.0.2"})
+            .check_call().wait(reactor);
+
         std::shared_ptr<Transport> target = Transport::create(reactor, ml,
                                                               target_creator, TRANSPORT_MTU);
-
-        create_listening_tcp_target_creator(reactor, target, "127.0.0.1", port);
+        terminator->set_transport(target);
     }
 
     void add_bind_address(string bind_addr) {
@@ -76,15 +88,15 @@ int main(int argc, char** argv) {
         ("help", "produce help message")
         ("listen-port,P",
          po::value<int>(), "port to listen to (if not using tun transport)")
-        ("tun-name,t",
+        ("tun-name",
          po::value<string>(), "tun name (for tun transport)")
         ("connect-address,c",
          po::value<string>()->default_value("127.0.0.1"), "address to connect to")
         ("connect-port,p",
          po::value<int>()->default_value(4500), "port to connect to")
-        ("identity,i",
+        ("identity",
          po::value<string>()->default_value("hello"), "PSK identity")
-        ("psk,p",
+        ("psk",
          po::value<string>()->default_value("6d41adad3518a0e8ba0362bd9ef03244"), "PSK (hex encoded)")
         ("static,s",
          po::value<std::vector<string> >(), "bind on these addresses when creating connections");
@@ -93,12 +105,13 @@ int main(int argc, char** argv) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help") || vm["static"].empty() || (vm["listen-port"].empty() ^ vm["tun-name"].empty())) {
+    if (vm.count("help") || vm["static"].empty() || !(vm["listen-port"].empty() ^ vm["tun-name"].empty())) {
         std::cout << desc << "\n";
         return 0;
     }
 
     TlsStream::init();
+    Process::init();
 
     Client client (vm["connect-address"].as<string>(), vm["connect-port"].as<int>(),
                    vm["identity"].as<string>(),

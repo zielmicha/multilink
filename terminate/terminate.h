@@ -20,7 +20,7 @@ class Terminator : public std::enable_shared_from_this<Terminator> {
     Future<PacketStreamPtr> create_target_2(Buffer data);
     void tcp_accepted(TcpStreamPtr stream);
 public:
-    std::shared_ptr<Terminator> create(Reactor& reactor, bool is_server);
+    static std::shared_ptr<Terminator> create(Reactor& reactor, bool is_server);
 
     Future<std::shared_ptr<PacketStream> > create_target(uint64_t id);
     void set_transport(TransportPtr transport);
