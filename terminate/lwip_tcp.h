@@ -22,32 +22,35 @@ typedef std::shared_ptr<TcpListener> TcpListenerPtr;
 class NetworkInterface {
     NetworkInterfaceImpl* impl;
 public:
-    NetworkInterface();
+    NetworkInterface(Reactor& reactor);
     ~NetworkInterface();
 
+    static void init();
     void on_recv(const Buffer data);
     void set_on_send_packet(std::function<void(IpAddress, Buffer)> callback);
 };
 
 class TcpListener: public std::enable_shared_from_this<TcpListener> {
+    Reactor& reactor;
     tcp_pcb* listener = nullptr;
     //tcp_pcb* listener_ip6;
 
     void accept(tcp_pcb* new_pcb, err_t err);
 public:
-    TcpListener();
+    TcpListener(Reactor& reactor);
     ~TcpListener();
 
     std::function<void(TcpStreamPtr)> on_accept;
 };
 
 class TcpStream: public AbstractStream {
+    Reactor& reactor;
     tcp_pcb* pcb;
     void recv_from_pcb(pbuf* buf);
     std::deque<std::pair<pbuf*, int> > recv_queue;
 
 public:
-    TcpStream(tcp_pcb* pcb);
+    TcpStream(Reactor& reactor, tcp_pcb* pcb);
     ~TcpStream();
 
     IpAddress get_remote_address();

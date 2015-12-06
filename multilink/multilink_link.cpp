@@ -204,7 +204,7 @@ namespace Multilink {
         if(recv_buffer_pos >= sizeof(uint16_t)) {
             uint16_t expected_length = ntohs(recv_buffer.convert<uint16_t>(0));
             if(expected_length > recv_buffer.size) {
-                LOG("expected_length too big");
+                ERROR("expected_length too big");
             }
             assert(expected_length != 0);
 
@@ -240,15 +240,15 @@ namespace Multilink {
 
             rtt.add_and_remove_back((int)delta);
 
-            LOG(*this <<
-                " pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
-                << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
+            DEBUG(*this <<
+                  " pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
+                  << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
             last_pong_recv_time = Timer::get_time();
 
             flush_in_flight_queue();
         } else {
-            LOG("unknown packet received: " << data);
+            ERROR("unknown packet received: " << data);
         }
     }
 

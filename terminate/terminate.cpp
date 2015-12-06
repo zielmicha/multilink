@@ -74,11 +74,11 @@ void Terminator::set_transport(TransportPtr transport) {
 void Terminator::set_tun(TunPtr tun) {
     this->tun = tun;
 
-    network_interface = std::make_shared<NetworkInterface>();
+    network_interface = std::make_shared<NetworkInterface>(reactor);
     network_interface->set_on_send_packet([this](IpAddress addr, Buffer buf) {
         this->tun.lock()->send(buf);
     });
-    tcp_listener = std::make_shared<TcpListener>();
+    tcp_listener = std::make_shared<TcpListener>(reactor);
     tcp_listener->on_accept = std::bind(&Terminator::tcp_accepted, this, std::placeholders::_1);
 
     tun->set_on_recv_ready(std::bind(&Terminator::tun_recv_ready, shared_from_this()));

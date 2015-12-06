@@ -1,5 +1,6 @@
 #define LOGGER_NAME "lwip_tcp"
 #include "libreactor/logging.h"
+#include "libreactor/timer.h"
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "terminate/lwip_tcp.h"
@@ -17,10 +18,11 @@ const int DEVICE_MTU = 1500; // TODO: think about this
 class NetworkInterfaceImpl {
     netif iface;
     AllocBuffer output_buffer;
+    Timer timer;
 
     void output(IpAddress ip, pbuf* p);
 public:
-    NetworkInterfaceImpl();
+    NetworkInterfaceImpl(Reactor& reactor);
     ~NetworkInterfaceImpl();
 
     std::function<void(IpAddress, Buffer)> on_send_packet;
@@ -32,9 +34,8 @@ public:
     }
 };
 
-NetworkInterface::NetworkInterface() {
-    lwip_init();
-    impl = new NetworkInterfaceImpl();
+NetworkInterface::NetworkInterface(Reactor& reactor) {
+    impl = new NetworkInterfaceImpl(reactor);
 }
 
 NetworkInterface::~NetworkInterface() {
@@ -51,7 +52,12 @@ void NetworkInterface::on_recv(const Buffer data) {
 
 // ---- NetworkInterfaceImpl
 
-NetworkInterfaceImpl::NetworkInterfaceImpl(): output_buffer(DEVICE_MTU + 4) {
+NetworkInterfaceImpl::NetworkInterfaceImpl(Reactor& reactor):
+        output_buffer(DEVICE_MTU + 4), timer(reactor) {
+    lwip_init();
+
+    timer.each(250 * 1000, tcp_tmr);
+
     ip_addr_t addr;
     addr.addr = inet_addr("10.77.0.2");
     ip_addr_t netmask;
@@ -142,7 +148,7 @@ NetworkInterfaceImpl::~NetworkInterfaceImpl() {
     netif_remove(&iface);
 }
 
-TcpListener::TcpListener() {
+TcpListener::TcpListener(Reactor& reactor): reactor(reactor) {
     struct tcp_pcb *l = tcp_new();
     assert(l);
 
@@ -151,6 +157,8 @@ TcpListener::TcpListener() {
 
     listener = tcp_listen(l);
     assert(listener);
+
+    listener->so_options |= SOF_KEEPALIVE;
 
     tcp_arg(listener, (void*) this);
     tcp_accept(listener, [](void* arg, tcp_pcb* new_pcb, err_t err) -> err_t {
@@ -161,24 +169,27 @@ TcpListener::TcpListener() {
 
 void TcpListener::accept(tcp_pcb* new_pcb, err_t err) {
     tcp_accepted(listener);
-    on_accept(std::make_shared<TcpStream>(new_pcb));
+    on_accept(std::make_shared<TcpStream>(reactor, new_pcb));
 }
 
 TcpListener::~TcpListener() {
     if(listener) tcp_close(listener);
 }
 
-TcpStream::TcpStream(tcp_pcb* pcb): pcb(pcb) {
+TcpStream::TcpStream(Reactor& reactor, tcp_pcb* pcb): reactor(reactor), pcb(pcb) {
     tcp_arg(pcb, this);
-    tcp_err(pcb, [](void* args, err_t err) {
-        ((TcpStream*) args)->on_error();
+    tcp_err(pcb, [](void* arg, err_t err) {
+        if (arg == nullptr) return;
+        ((TcpStream*) arg)->on_error();
     });
     tcp_recv(pcb, [](void* arg, tcp_pcb* pcb, pbuf* buf, err_t err) -> err_t {
+        if (arg == nullptr) return ERR_OK;
         assert(err == ERR_OK);
         ((TcpStream*) arg)->recv_from_pcb(buf);
         return ERR_OK;
     });
     tcp_sent(pcb, [](void* arg, tcp_pcb* pcb, u16_t len) -> err_t {
+        if (arg == nullptr) return ERR_OK;
         ((TcpStream*) arg)->on_write_ready();
         return ERR_OK;
     });
@@ -222,6 +233,14 @@ Buffer TcpStream::read(Buffer out) {
 
     pbuf* p = recv_queue.front().first;
     int& iter = recv_queue.front().second;
+
+    if (p == nullptr) {
+        recv_queue.pop_front();
+        reactor.schedule(on_error);
+        LOG("EOF");
+        return Buffer(nullptr, 0);
+    }
+
     int read_size = std::min((int) out.size, p->tot_len - iter);
 
     pbuf_copy_partial(p, out.data, read_size, iter);
@@ -238,6 +257,9 @@ Buffer TcpStream::read(Buffer out) {
 
 void TcpStream::close() {
     if (pcb) {
+        // tcp_close closes and deallocates the pcb
+        // set arg to nullptr, so callback won't access deallocated TcpStream
+        tcp_arg(pcb, nullptr);
         tcp_close(pcb);
         pcb = nullptr;
     }
@@ -248,9 +270,13 @@ size_t TcpStream::write(const Buffer data) {
 
     err_t err = tcp_write(pcb, data.data, size, TCP_WRITE_FLAG_COPY);
     assert (err == ERR_OK);
+
+    err = tcp_output(pcb); // FIXME: this may be unoptimal
+    assert (err == ERR_OK);
     return size;
 }
 
 TcpStream::~TcpStream() {
-    if (pcb) tcp_close(pcb);
+    if (pcb)
+        tcp_abort(pcb);
 }

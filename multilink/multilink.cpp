@@ -107,7 +107,7 @@ namespace Multilink {
          */
         if(links.empty()) return;
 
-        LOG("assign " << queue.size());
+        DEBUG("assign " << queue.size());
 
         uint64_t max_time = 0;
 
@@ -119,13 +119,13 @@ namespace Multilink {
 
             uint64_t estimated_size = links[i]->get_estimated_in_flight();
 
-            LOG("estimated in flight " << estimated_size << " for " << *links[i]);
+            DEBUG("estimated in flight " << estimated_size << " for " << *links[i]);
 
             for(auto& pkt : assigned_packets[&*links[i]]) // TODO: O(1)
                 estimated_size += pkt.as_buffer().size;
 
             estimated.push_back(estimated_size);
-            LOG("estimated size " << estimated_size << " for " << *links[i]);
+            DEBUG("estimated size " << estimated_size << " for " << *links[i]);
         }
 
         auto key = [&](int i) -> uint64_t {
@@ -176,7 +176,7 @@ namespace Multilink {
             std::push_heap(L.begin(), L.end(), cmp);
         }
 
-        LOG("assigned max time " << max_time);
+        DEBUG("assigned max time " << max_time);
         for(size_t i = 0; i < links.size(); i ++) {
             LOG("assigned " << num_assigned[i] << " to " << *links[i]);
         }

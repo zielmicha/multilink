@@ -48,6 +48,13 @@ void Timer::once(uint64_t delta, const std::function<void()>& func) {
     schedule(get_time() + delta, func);
 }
 
+void Timer::each(uint64_t delta, const std::function<void()> func) {
+    once(delta, [this, delta, func]() {
+        func();
+        each(delta, func);
+    });
+}
+
 uint64_t Timer::get_time() {
     struct timespec spec;
     if(clock_gettime(CLOCK_MONOTONIC, &spec) != 0)

@@ -29,6 +29,7 @@ public:
 
     void schedule(uint64_t time, const std::function<void()> &func);
     void once(uint64_t delta, const std::function<void()>& func);
+    void each(uint64_t delta, std::function<void()> func);
     static uint64_t get_time();
 };
 
