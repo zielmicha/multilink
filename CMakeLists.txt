@@ -72,3 +72,9 @@ add_executable(multilink_server
   app/server.cpp)
 
 target_link_libraries(multilink_server reactor_tls reactor json11 ssl crypto ${Boost_LIBRARIES})
+
+add_executable(server_child
+  app/server_child.cpp
+  app/rpc.cpp)
+
+target_link_libraries(server_child multilink terminate lwip reactor json11 ${Boost_LIBRARIES})

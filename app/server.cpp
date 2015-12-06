@@ -17,6 +17,8 @@ namespace po = boost::program_options;
 using std::string;
 using json11::Json;
 
+const std::string CHILD_PATH = "./build/server_child";
+
 struct ProcessHandler {
     Reactor& reactor;
     string path;
@@ -28,25 +30,24 @@ struct ProcessHandler {
 
     std::function<void()> on_close;
 
-    ProcessHandler(Reactor& reactor, std::function<void()> on_close, string target_host, int target_port):
+    ProcessHandler(Reactor& reactor, std::function<void()> on_close,
+                   std::vector<string> child_options):
         reactor(reactor), on_close(on_close) {
         path = "/tmp/.ml_" + random_hex_string(32);
 
         FDPtr server_socket = UnixSocket::bind(reactor, path);
         server_socket->set_close_on_exec(false);
-        process = Popen(reactor, {"./build/app", "&" + std::to_string(server_socket->fileno())}).exec();
+        std::vector<string> args =
+            {CHILD_PATH, "--sock-fd", std::to_string(server_socket->fileno())};
+        for (auto opt : child_options) args.push_back(opt);
+
+        process = Popen(reactor, args).exec();
         server_socket->close();
 
         main_stream = LengthPacketStream::create(reactor, UnixSocket::connect(reactor, path));
+        main_stream->set_on_send_ready(nothing);
+        main_stream->set_on_recv_ready(nothing);
         multilink_num = 0;
-
-        send_message(main_stream, Json::object {
-                {"type", "multilink-client-server"},
-                {"is_server", true},
-                {"host", target_host},
-                {"port", target_port},
-                {"num", multilink_num}
-            }).wait(reactor);
     }
 
     ProcessHandler(const ProcessHandler& other) = delete;
@@ -55,44 +56,31 @@ struct ProcessHandler {
         return ioutil::send(stream, ByteString::copy_from(value.dump()));
     }
 
-    Future<int> provide_stream(StreamPtr stream) {
+    void add_link(StreamPtr stream, string name) {
         auto raw_stream = UnixSocket::connect(reactor, path);
         auto control_stream = LengthPacketStream::create(reactor, raw_stream);
-        int stream_num = stream_counter ++;
 
+        control_stream->set_on_send_ready(nothing);
         send_message(control_stream, Json::object {
-            { "type", "provide-stream" },
-            { "num", stream_num }
-        }).ignore();
+                { "type", "add-link" },
+                { "name", name }
+            }).ignore();
 
-        return ioutil::read(raw_stream, 3).then([=](ByteString s) -> int {
+        ioutil::read(raw_stream, 3).then([=](ByteString s) -> unit {
             if (string(s) != "ok\n") {
                 LOG("unexpected response from app: " << s);
                 abort();
             }
             pipe_both(reactor, stream, raw_stream, Multilink::LINK_MTU);
-            return stream_num;
-        });
-    }
-
-    void add_link(StreamPtr stream, string name) {
-        provide_stream(stream).then([=](int stream_num) {
-            return send_message(main_stream, Json::object {
-                { "type", "add-link" },
-                { "stream_fd", stream_num },
-                { "num", multilink_num }
-            });
-        }).then([=](unit _) -> unit {
             return {};
-        });
+        }).ignore();
     }
 };
 
 struct Server {
     Reactor reactor;
     std::unordered_map<string, std::unique_ptr<ProcessHandler> > multilinks;
-    string target_host;
-    int target_port;
+    std::vector<string> child_options;
 
     ProcessHandler& get_or_create(string multilink_id) {
         auto& item = multilinks[multilink_id];
@@ -101,20 +89,15 @@ struct Server {
             auto on_close = [this, multilink_id]() {
                 multilinks.erase(multilink_id);
             };
-            item = std::unique_ptr<ProcessHandler>(new ProcessHandler(reactor, on_close, target_host, target_port));
+            item = std::unique_ptr<ProcessHandler>(new ProcessHandler(reactor, on_close, child_options));
         }
 
         return *item;
     }
 
-    void run(string listen_host, int listen_port,
-             string target_host, int target_port,
+    void run(string listen_host, int listen_port, std::vector<string> child_options,
              TlsStream::ServerPskFunc identity_callback) {
-        Process::init();
-        TlsStream::init();
-
-        this->target_port = target_port;
-        this->target_host = target_host;
+        this->child_options = child_options;
 
         TCP::listen(reactor, listen_host, listen_port, [&](FDPtr fd) {
             LOG("incoming connection");
@@ -131,6 +114,12 @@ struct Server {
         }).ignore();
 
         reactor.run();
+    }
+
+    void verify_child_options(std::vector<string> options) {
+        options.insert(options.begin(), CHILD_PATH);
+        options.push_back("--dry-run");
+        Popen(reactor, options).check_call().wait(reactor);
     }
 };
 
@@ -155,6 +144,9 @@ ByteString file_identity_callback(string filename, const char* identity) {
 }
 
 int main(int argc, char** argv) {
+    TlsStream::init();
+    Process::init();
+
     po::options_description desc ("Start Multilink server");
     desc.add_options()
         ("help", "produce help message")
@@ -162,10 +154,8 @@ int main(int argc, char** argv) {
          po::value<int>()->default_value(4500), "port to listen to")
         ("listen-host,h",
          po::value<string>()->default_value("127.0.0.1"), "address to listen to")
-        ("target-port,P",
-         po::value<int>()->default_value(5000), "address to tunnel connections to")
-        ("target-host,H",
-         po::value<string>()->default_value("127.0.0.1"), "port to tunnel connections to")
+        ("child-option,x",
+         po::value<std::vector<string> >(), "option for the child process")
         ("identity-file,f",
          po::value<string>()->default_value("identity_default"), "identity file");
 
@@ -180,11 +170,13 @@ int main(int argc, char** argv) {
 
     int listen_port = vm["listen-port"].as<int>();
     string listen_host = vm["listen-host"].as<string>();
-    int target_port = vm["target-port"].as<int>();
-    string target_host = vm["target-host"].as<string>();
     string identity_file = vm["identity-file"].as<string>();
+    std::vector<string> child_options;
+    if (vm.count("child-option"))
+        child_options = vm["child-option"].as<std::vector<string> >();
 
     Server server;
-    server.run(listen_host, listen_port, target_host, target_port,
+    server.verify_child_options(child_options);
+    server.run(listen_host, listen_port, child_options,
                std::bind(file_identity_callback, identity_file, std::placeholders::_1));
 }
