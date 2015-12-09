@@ -116,6 +116,10 @@ public:
             });
     }
 
+    void on_failure(const std::function<void(std::unique_ptr<std::exception>)>& fun_exc) {
+        on_success_or_failure([](T){}, fun_exc);
+    }
+
     template <typename R>
     Future<R> then(std::function<Future<R>(T)> fun) const;
 
@@ -129,6 +133,9 @@ public:
     auto then(F fun) const -> Future<RetType> {
         return then<RetType>(fun);
     }
+
+    Future<T> except(std::function<Future<T>(std::unique_ptr<std::exception>)> fun) const;
+    Future<T> except(std::function<T(std::unique_ptr<std::exception>)> fun) const;
 
     bool has_result() const {
         return data->state != FutureState::WAITING;
@@ -179,6 +186,13 @@ public:
         data->exception_callback(std::move(ex));
     }
 
+    std::function<void(std::unique_ptr<std::exception>)> result_failure_fn() const {
+        decltype(*this) self = *this;
+        return [self](std::unique_ptr<std::exception> ret) {
+            self.result_failure(std::move(ret));
+        };
+    }
+
     typedef Future<typename CASTER::Target> FutureType;
 
     FutureType future() const {
@@ -217,6 +231,10 @@ public:
             self.result(ret);
         };
     }
+
+    void complete_from(Future<T> f) const {
+        f.on_success_or_failure(this->result_fn(), this->result_failure_fn());
+    }
 };
 
 template <typename T>
@@ -226,7 +244,7 @@ Future<R> Future<T>::then(std::function<Future<R>(T)> fun) const {
     on_success_or_failure(
         [f, fun](T val) {
             Future<R> ret = fun(val);
-            ret.on_success(f.result_fn());
+            f.complete_from(ret);
         },
         [f, fun](std::unique_ptr<std::exception> ex) {
             f.result_failure(std::move(ex));
@@ -248,6 +266,34 @@ Future<R> Future<T>::then(std::function<R(T)> fun) const {
         });
     return f.future();
 }
+
+
+template <typename T>
+Future<T> Future<T>::except(std::function<Future<T>(std::unique_ptr<std::exception>)> fun) const {
+    Completer<T> f;
+    on_success_or_failure(
+        [f, fun](T val) {
+            f.result(val);
+        },
+        [f, fun](std::unique_ptr<std::exception> ex) {
+            f.complete_from(fun(std::move(ex)));
+        });
+    return f.future();
+}
+
+template <typename T>
+Future<T> Future<T>::except(std::function<T(std::unique_ptr<std::exception>)> fun) const {
+    Completer<T> f;
+    on_success_or_failure(
+        [=](T val) {
+            f.result(val);
+        },
+        [=](std::unique_ptr<std::exception> ex) {
+            f.result(fun(std::move(ex)));
+        });
+    return f.future();
+}
+
 
 template <typename T, typename CASTER = _NoCast<T> >
 class ImmediateCompleter : public _BaseCompleter<T, CASTER> {

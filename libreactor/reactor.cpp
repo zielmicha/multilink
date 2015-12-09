@@ -80,6 +80,7 @@ int FD::fileno() {
 
 void FD::close() {
     ::close(fd);
+    fd = -1;
     // commit suicide
     reactor.fds.erase(fd);
 }

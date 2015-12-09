@@ -3,6 +3,7 @@ class HeaderPacketStream : public AbstractPacketStream, public std::enable_share
     typedef std::function<Future<PacketStreamPtr>(Buffer)> Callback;
     Callback callback;
     PacketStreamPtr new_stream = nullptr;
+    bool error = false;
 
 public:
     HeaderPacketStream(Callback callback): callback(callback) {}
@@ -26,7 +27,8 @@ public:
         return 0;
     }
 
-    void close() { // FIXME: race condition
+    void close() {
+        error = true;
         if (new_stream)
             new_stream->close();
     }
@@ -35,16 +37,28 @@ public:
         if (new_stream) {
             new_stream->send(data);
         } else {
+            assert (callback != nullptr);
             auto self = this->shared_from_this();
             callback(data).then([self](PacketStreamPtr stream) -> unit {
                 stream->set_on_send_ready(self->on_send_ready);
                 stream->set_on_recv_ready(self->on_recv_ready);
                 stream->set_on_error(self->on_error);
                 self->new_stream = stream;
+
+                if (self->error) {
+                    LOG ("HeaderPacketStream closed before callback returned");
+                    stream->close();
+                    return {};
+                }
+
                 self->on_send_ready();
                 self->on_recv_ready();
                 return {};
-            }).ignore();
+            }).on_failure([self] (std::unique_ptr<std::exception> ex) {
+                ERROR ("error in HeaderPacketStream callback: " << ex->what());
+                self->error = true;
+                self->on_error();
+            });
             callback = nullptr;
         }
     }

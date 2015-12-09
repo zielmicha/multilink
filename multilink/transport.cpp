@@ -67,7 +67,9 @@ void Transport::add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > t
         shared_this->target_recv_ready(stream);
 
         return {};
-    }).ignore();
+    }).on_failure([shared_this, stream](std::unique_ptr<std::exception> ex) {
+        shared_this->target_error(stream);
+    });
 }
 
 void Transport::target_send_ready(std::shared_ptr<ChildStream> child) {
@@ -123,7 +125,8 @@ void Transport::target_error(std::shared_ptr<ChildStream> child) {
     special_packet_queue.push_back({CLOSE_CHANNEL, child->id});
     send_special_packet();
 
-    child->target->close();
+    if (child->target)
+        child->target->close();
     child->target = nullptr;
 }
 
