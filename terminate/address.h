@@ -2,6 +2,8 @@
 #define TERMINATE_IP_H_
 #include <stdint.h>
 #include <string>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 struct IpAddress {
     enum { v4, v6 } type;
@@ -9,6 +11,10 @@ struct IpAddress {
         uint32_t addr4;
         uint32_t addr6[4];
     };
+
+    static IpAddress parse4(std::string s) {
+        return make4(inet_addr(s.c_str()));
+    }
 
     static IpAddress make4(uint32_t a) {
         IpAddress ret;

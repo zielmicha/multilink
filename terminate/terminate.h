@@ -3,6 +3,7 @@
 #include "multilink/transport.h"
 #include "terminate/tun.h"
 #include "terminate/lwip_tcp.h"
+#include "terminate/ippacket.h"
 
 class Terminator : public std::enable_shared_from_this<Terminator> {
     bool is_server;
@@ -10,6 +11,7 @@ class Terminator : public std::enable_shared_from_this<Terminator> {
     NetworkInterfacePtr network_interface;
     TcpListenerPtr tcp_listener;
     uint64_t id_counter;
+    RawPacketStreamPtr raw_packet_stream;
 
     Terminator(Reactor& reactor);
 
@@ -27,7 +29,7 @@ public:
 
     Future<std::shared_ptr<PacketStream> > create_target(uint64_t id);
     void set_transport(TransportPtr transport);
-    void set_tun(TunPtr tun);
+    void set_tun(TunPtr tun, std::string ip4);
 };
 
 typedef std::shared_ptr<Terminator> TerminatorPtr;

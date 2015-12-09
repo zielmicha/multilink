@@ -53,7 +53,8 @@ include(deps/lwip/CMakeLists.txt)
 add_library(terminate STATIC
   terminate/tun.cpp
   terminate/terminate.cpp
-  terminate/lwip_tcp.cpp)
+  terminate/lwip_tcp.cpp
+  terminate/ippacket.cpp)
 
 include(tests/CMakeLists.txt)
 

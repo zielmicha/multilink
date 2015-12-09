@@ -195,7 +195,7 @@ void Transport::place_packet(uint64_t id, uint64_t seq, Buffer data) {
     // TODO: choke/unchoke
 
     if(((int)child->buffer.size()) < rel_seq + 1) {
-        LOG("resize to " << rel_seq + 1);
+        DEBUG("resize to " << rel_seq + 1);
         child->buffer.resize(rel_seq + 1);
     }
 

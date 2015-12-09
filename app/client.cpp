@@ -46,19 +46,13 @@ struct Client {
     void create_terminate_target(string tun_name) {
         std::shared_ptr<Terminator> terminator = Terminator::create(reactor, false);
         std::shared_ptr<Tun> tun = Tun::create(reactor, tun_name);
-        terminator->set_tun(tun);
-
-        TargetCreator target_creator = std::bind(&Terminator::create_target, terminator,
-                                                 std::placeholders::_1);
-
-        Popen(reactor, {"ip", "link", "set", "dev", tun_name, "up"})
-            .check_call().wait(reactor);
-
-        Popen(reactor, {"ip", "addr", "add", "dev", tun_name, "10.77.0.1"})
-            .check_call().wait(reactor);
+        terminator->set_tun(tun, "10.77.0.1");
 
         Popen(reactor, {"ip", "route", "replace", "default", "dev", tun_name})
             .check_call().wait(reactor);
+
+        TargetCreator target_creator = std::bind(&Terminator::create_target, terminator,
+                                                 std::placeholders::_1);
 
         std::shared_ptr<Transport> target = Transport::create(reactor, ml,
                                                               target_creator, TRANSPORT_MTU);

@@ -3,10 +3,14 @@
 #include "libreactor/tcp.h"
 #include "libreactor/packet_stream_util.h"
 #include "libreactor/bytestring.h"
+#include "libreactor/process.h"
 #include "terminate/terminate.h"
 #include "terminate/terminate_misc.h"
+#include "terminate/ippacket.h"
+#include "terminate/address.h"
 
-Terminator::Terminator(Reactor& reactor): reactor(reactor) {
+Terminator::Terminator(Reactor& reactor):
+    reactor(reactor) {
 }
 
 void Terminator::tcp_accepted(TcpStreamPtr stream) {
@@ -27,6 +31,9 @@ TerminatorPtr Terminator::create(Reactor& reactor, bool is_server) {
         self->id_counter = 100;
     else
         self->id_counter = (1 << 1ull) + 100;
+
+    self->raw_packet_stream = RawPacketStreamPtr(new RawPacketStream(is_server));
+
     return self;
 }
 
@@ -69,9 +76,10 @@ Future<PacketStreamPtr> Terminator::create_target_2(Buffer header) {
 
 void Terminator::set_transport(TransportPtr transport) {
     this->transport = transport;
+    transport->add_target(0, Future<PacketStreamPtr>::make_immediate(raw_packet_stream));
 }
 
-void Terminator::set_tun(TunPtr tun) {
+void Terminator::set_tun(TunPtr tun, std::string ip) {
     this->tun = tun;
 
     network_interface = std::make_shared<NetworkInterface>(reactor);
@@ -82,6 +90,17 @@ void Terminator::set_tun(TunPtr tun) {
     tcp_listener->on_accept = std::bind(&Terminator::tcp_accepted, this, std::placeholders::_1);
 
     tun->set_on_recv_ready(std::bind(&Terminator::tun_recv_ready, shared_from_this()));
+    raw_packet_stream->set_tun(tun, ip);
+
+    Popen(reactor, {"ip", "link", "set", "dev", tun->name, "up"})
+        .check_call().wait(reactor);
+
+    if (is_server)
+        Popen(reactor, {"ip", "route", "add", ip, "dev", tun->name})
+            .check_call().wait(reactor);
+    else
+        Popen(reactor, {"ip", "addr", "add", "dev", tun->name, ip})
+            .check_call().wait(reactor);
 }
 
 void Terminator::tun_recv_ready() {
@@ -89,6 +108,7 @@ void Terminator::tun_recv_ready() {
         auto packet = tun.lock()->recv();
         if (!packet) break;
 
-        network_interface->on_recv(*packet);
+        if (!raw_packet_stream->from_tun(packet->slice(4)))
+            network_interface->on_recv(*packet);
     }
 }

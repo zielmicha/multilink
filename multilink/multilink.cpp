@@ -19,7 +19,7 @@ namespace Multilink {
         assert(queue.size() < QUEUE_SIZE); // TODO
         queue.push_back(AllocBuffer::copy(data));
         if(was_empty) {
-            LOG("queue was empty!");
+            DEBUG("queue was empty!");
             reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
         }
     }
@@ -34,7 +34,7 @@ namespace Multilink {
         for(auto& link: links) {
             result = link->recv();
             if(result) {
-                LOG("recv from " << (*link) << " " << (uint64_t)link->rtt.mean() << " id " << (result->convert<uint64_t>(8))
+                DEBUG("recv from " << (*link) << " " << (uint64_t)link->rtt.mean() << " id " << (result->convert<uint64_t>(8))
                     << " channel " << (result->convert<uint64_t>(0)));
                 return result;
             }
@@ -178,7 +178,7 @@ namespace Multilink {
 
         DEBUG("assigned max time " << max_time);
         for(size_t i = 0; i < links.size(); i ++) {
-            LOG("assigned " << num_assigned[i] << " to " << *links[i]);
+            DEBUG("assigned " << num_assigned[i] << " to " << *links[i]);
         }
     }
 }
