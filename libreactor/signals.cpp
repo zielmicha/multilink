@@ -43,7 +43,7 @@ namespace Signals {
         sa.sa_handler = &handle;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-        if(sigaction(SIGCHLD, &sa, 0) == -1) {
+        if(sigaction(sig, &sa, 0) == -1) {
             perror("sigaction");
             exit(1);
         }

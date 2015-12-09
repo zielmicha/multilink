@@ -22,6 +22,9 @@ class Terminator : public std::enable_shared_from_this<Terminator> {
 public:
     static std::shared_ptr<Terminator> create(Reactor& reactor, bool is_server);
 
+    // bind to this address when creating outbound TCP connections
+    std::string bind_address = "";
+
     Future<std::shared_ptr<PacketStream> > create_target(uint64_t id);
     void set_transport(TransportPtr transport);
     void set_tun(TunPtr tun);

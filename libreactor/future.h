@@ -33,6 +33,7 @@ struct _NoCast {
 };
 
 void _future_nop();
+void future_log(std::string error);
 
 template <typename T, typename CASTER = _NoCast<T> >
 struct _FutureData : public _BaseFutureData<typename CASTER::Target> {
@@ -145,6 +146,10 @@ public:
     }
 
     void ignore() const {
+        on_success_or_failure([](T arg) {},
+                              [](std::unique_ptr<std::exception> ex) {
+                                  future_log(ex->what());
+                              });
     }
 };
 

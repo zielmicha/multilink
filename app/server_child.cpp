@@ -5,6 +5,7 @@
 #include "multilink/multilink.h"
 #include "multilink/transport.h"
 #include "multilink/transport_targets.h"
+#include "terminate/terminate.h"
 #include <boost/program_options.hpp>
 
 namespace po = boost::program_options;
@@ -28,6 +29,21 @@ struct Server {
                           target_creator, Multilink::MULTILINK_MTU);
     }
 
+    void setup_terminate_target(string bind_address) {
+        multilink = std::make_shared<Multilink::Multilink>(reactor);
+
+        std::shared_ptr<Terminator> terminator = Terminator::create(reactor, true);
+        terminator->bind_address = bind_address;
+
+        TargetCreator target_creator = std::bind(&Terminator::create_target, terminator,
+                                                 std::placeholders::_1);
+
+        auto transport = Transport::create(reactor, multilink, target_creator,
+                                           Multilink::MULTILINK_MTU);
+
+        terminator->set_transport(transport);
+    }
+    
     void callback(std::shared_ptr<RPCStream> stream,
                   Json message) {
         std::string cmd_name = message["type"].string_value();
@@ -54,6 +70,8 @@ int main(int argc, char** argv) {
          po::value<int>(), "target port (if using connect target)")
         ("target-host",
          po::value<string>()->default_value("127.0.0.1"), "target host")
+        ("connect-bind",
+         po::value<string>()->default_value("0.0.0.0"), "bind to this host when creating outbound TCP connections")
         ("dry-run", "only verify that options make sense");
 
     po::variables_map vm;
@@ -78,6 +96,8 @@ int main(int argc, char** argv) {
     if (vm.count("target-port")) {
         server.setup_connect_target(vm["target-host"].as<string>(),
                                     vm["target-port"].as<int>());
+    } else {
+        server.setup_terminate_target(vm["connect-bind"].as<string>());
     }
 
     auto rpcserver = RPCServer::create(reactor, vm["sock-fd"].as<int>(), callback);

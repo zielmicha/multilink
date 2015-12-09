@@ -29,7 +29,8 @@ void create_listening_tcp_target_creator(Reactor& reactor, std::shared_ptr<Trans
 TargetCreator unknown_stream_target_creator() {
     return [](uint64_t) -> Future<std::shared_ptr<PacketStream> > {
         // TODO: report error
-        LOG("use of unknown stream");
-        return make_future(std::shared_ptr<PacketStream> {});
+        ERROR("use of unknown stream");
+        return Future<std::shared_ptr<PacketStream> >
+            ::make_exception("use of unknown stream");
     };
 }

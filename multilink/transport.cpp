@@ -55,6 +55,8 @@ void Transport::add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > t
     auto shared_this = shared_from_this();
 
     target.then<unit>([shared_this, stream](std::shared_ptr<PacketStream> target) -> unit {
+        assert (target);
+
         stream->target = target;
 
         target->set_on_send_ready(std::bind(&Transport::target_send_ready, shared_this, stream));
@@ -65,7 +67,7 @@ void Transport::add_target(uint64_t id, Future<std::shared_ptr<PacketStream> > t
         shared_this->target_recv_ready(stream);
 
         return {};
-    });
+    }).ignore();
 }
 
 void Transport::target_send_ready(std::shared_ptr<ChildStream> child) {

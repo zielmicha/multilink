@@ -1,3 +1,4 @@
+#define LOGGER_NAME "logging"
 #include "libreactor/logging.h"
 #include <sstream>
 #include <iomanip>
@@ -68,4 +69,8 @@ std::string url_encode(std::string value) {
     }
 
     return escaped.str();
+}
+
+void future_log(std::string error) {
+    LOG("error in ignored future: " << error);
 }

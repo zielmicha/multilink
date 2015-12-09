@@ -31,9 +31,9 @@ TerminatorPtr Terminator::create(Reactor& reactor, bool is_server) {
 }
 
 Future<PacketStreamPtr> Terminator::create_target(uint64_t id) {
-    if ((bool)(id & (1ull << 63)) == !is_server) {
+    if (((id & (1ull << 63)) != 0) != !is_server) {
         LOG("requested stream with an unexpected id " << id);
-        return Future<PacketStreamPtr>::make_immediate(PacketStreamPtr(nullptr));
+        return Future<PacketStreamPtr>::make_exception("bad stream ID");
     }
 
     return Future<PacketStreamPtr>::make_immediate(std::make_shared<HeaderPacketStream>(std::bind(&Terminator::create_target_2, shared_from_this(), std::placeholders::_1)));
@@ -44,7 +44,7 @@ Future<PacketStreamPtr> Terminator::create_target_2(Buffer header) {
     int type_len = header_string.find("\n");
     if (type_len == -1) type_len = header_string.size();
     std::string type = header_string.substr(0, type_len);
-    std::string rest = header_string.substr(type_len, header_string.size() - type_len);
+    std::string rest = header_string.substr(type_len + 1, header_string.size());
 
     if (type == "tcp") {
         int pos = rest.find(":");
@@ -58,7 +58,7 @@ Future<PacketStreamPtr> Terminator::create_target_2(Buffer header) {
             return Future<PacketStreamPtr>::make_exception("bad tcp port format");
         }
         std::string addr = rest.substr(0, pos);
-        return TCP::connect(reactor, addr, port).then([this](StreamPtr stream) -> PacketStreamPtr {
+        return TCP::connect(reactor, addr, port, bind_address).then([this](StreamPtr stream) -> PacketStreamPtr {
             return FreePacketStream::create(reactor, stream);
         });
     } else {

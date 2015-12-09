@@ -35,7 +35,7 @@ namespace TCP {
             auto bind_addr = make_addr(bind, 0);
             int res = ::bind(sockfd, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
             if (res < 0) {
-                errno_to_exception();
+                return Future<FDPtr>::make_exception(errno_get_exception());
             }
         }
 
@@ -43,7 +43,7 @@ namespace TCP {
         int res = connect(sockfd, (struct sockaddr *)&connect_addr, sizeof(connect_addr));
 
         if(res < 0 && errno != EINPROGRESS) {
-            errno_to_exception();
+            return Future<FDPtr>::make_exception(errno_get_exception());
         }
 
         if(res == 0) {

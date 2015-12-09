@@ -1,5 +1,7 @@
 #define LOGGER_NAME "multilink_client"
 #include <boost/program_options.hpp>
+#include <unistd.h>
+#include <fstream>
 #include "libreactor/logging.h"
 #include "libreactor/misc.h"
 #include "multilink/multilink.h"
@@ -9,10 +11,13 @@
 #include "libreactor/tls.h"
 #include "libreactor/ioutil.h"
 #include "libreactor/process.h"
+#include "libreactor/signals.h"
 #include "terminate/terminate.h"
 
 namespace po = boost::program_options;
 using std::string;
+
+const string PID_FILE = "/var/run/multilink-iface-notify.pid";
 
 struct Client {
     Reactor reactor;
@@ -49,7 +54,10 @@ struct Client {
         Popen(reactor, {"ip", "link", "set", "dev", tun_name, "up"})
             .check_call().wait(reactor);
 
-        Popen(reactor, {"ip", "addr", "add", "dev", tun_name, "10.77.0.1", "peer", "10.77.0.2"})
+        Popen(reactor, {"ip", "addr", "add", "dev", tun_name, "10.77.0.1"})
+            .check_call().wait(reactor);
+
+        Popen(reactor, {"ip", "route", "replace", "default", "dev", tun_name})
             .check_call().wait(reactor);
 
         std::shared_ptr<Transport> target = Transport::create(reactor, ml,
@@ -77,6 +85,21 @@ struct Client {
         });
     }
 
+    void enable_nm_integration() {
+        Signals::register_signal_handler(SIGUSR1, std::bind(&Client::reload_nm, this));
+
+        std::ofstream pid_file;
+        pid_file.open(PID_FILE);
+        pid_file << getpid() << std::endl;
+        pid_file.close();
+
+        Popen(reactor, "./scripts/network-manager-setup.sh").check_call().wait(reactor);
+    }
+
+    void reload_nm() {
+        LOG("reloading interface list");
+    }
+
     void run() {
         reactor.run();
     }
@@ -99,13 +122,16 @@ int main(int argc, char** argv) {
         ("psk",
          po::value<string>()->default_value("6d41adad3518a0e8ba0362bd9ef03244"), "PSK (hex encoded)")
         ("static,s",
-         po::value<std::vector<string> >(), "bind on these addresses when creating connections");
+         po::value<std::vector<string> >(), "bind on these addresses when creating connections")
+        ("network-manager-integration,n", "enable Network Manager integration");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help") || vm["static"].empty() || !(vm["listen-port"].empty() ^ vm["tun-name"].empty())) {
+    bool nm_integration = vm.count("network-manager-integration") != 0;
+
+    if (vm.count("help") || (vm["static"].empty() && !nm_integration) || !(vm["listen-port"].empty() ^ vm["tun-name"].empty())) {
         std::cout << desc << "\n";
         return 0;
     }
@@ -123,8 +149,14 @@ int main(int argc, char** argv) {
         client.create_terminate_target(vm["tun-name"].as<string>());
     }
 
-    for (string s : vm["static"].as<std::vector<string> >()) {
-        client.add_bind_address(s);
+    if (nm_integration) {
+        client.enable_nm_integration();
+    }
+
+    if (vm.count("static")) {
+        for (string s : vm["static"].as<std::vector<string> >()) {
+            client.add_bind_address(s);
+        }
     }
 
     client.run();

@@ -37,6 +37,9 @@ public:
         } else {
             auto self = this->shared_from_this();
             callback(data).then([self](PacketStreamPtr stream) -> unit {
+                stream->set_on_send_ready(self->on_send_ready);
+                stream->set_on_recv_ready(self->on_recv_ready);
+                stream->set_on_error(self->on_error);
                 self->new_stream = stream;
                 self->on_send_ready();
                 self->on_recv_ready();
