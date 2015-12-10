@@ -133,7 +133,7 @@ void NetworkInterfaceImpl::output(IpAddress ip, pbuf* p) {
 }
 
 void NetworkInterfaceImpl::on_recv(const Buffer data) {
-    if (data.size > DEVICE_MTU) {
+    if (data.size > DEVICE_MTU + 4) {
         LOG("packet too big (" << data.size << ")");
         return;
     }

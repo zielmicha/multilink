@@ -1,6 +1,7 @@
 #define LOGGER_NAME "ippacket"
 #include "libreactor/logging.h"
 #include "terminate/ippacket.h"
+#include <linux/if_tun.h>
 
 const int MAX_TUN_QUEUE_SIZE = 64;
 
@@ -27,8 +28,64 @@ bool RawPacketStream::is_send_ready() {
     return true;
 }
 
+inline void checksum_carry(uint32_t& c) {
+    c = (c & 0xffff) + (c >> 16);
+}
+
+uint16_t ip4_checksum(Buffer packet) {
+    uint32_t c = 0;
+    for (int i=0; i < packet.size; i += 2) {
+        c += ntohs(packet.convert<uint16_t>(i)); // FIXME: byteorder
+        checksum_carry(c);
+    }
+    return htons(~c);
+}
+
+void ip4_fill_checksum(Buffer packet) {
+    int ihl = (packet.convert<uint8_t>(0) & 0xF);
+    int header_length = ihl * 4;
+
+    packet.convert<uint16_t>(10) = 0;
+    packet.convert<uint16_t>(10) = ip4_checksum(packet.slice(0, header_length));
+}
+
+void udp4_fill_checksum(Buffer packet) {
+    int ihl = (packet.convert<uint8_t>(0) & 0xF);
+    int header_length = ihl * 4;
+
+    Buffer payload = packet.slice(header_length);
+    if (payload.size < 16) return;
+
+    payload.convert<uint16_t>(6) = 0;
+
+    uint32_t c = 0;
+    for (int i=12; i < 20; i += 2) { // src and dst
+        c += packet.convert<uint16_t>(i);
+        checksum_carry(c);
+    }
+
+    c += htons(Protocol::UDP);
+    checksum_carry(c);
+
+    c += htons(payload.size);
+    checksum_carry(c);
+
+    for (int i=0; i < payload.size - 1; i += 2) {
+        c += payload.convert<uint16_t>(i);
+        checksum_carry(c);
+    }
+    if (payload.size % 2 == 1) {
+        c += payload.convert<uint8_t>(payload.size - 1);
+        checksum_carry(c);
+    }
+
+
+    if (c == 0xFFFF) c = 0;
+    payload.convert<uint16_t>(6) = ~(uint16_t)c;
+}
+
 bool RawPacketStream::prepare_tun_packet(Buffer buffer) {
-    buffer.convert<uint16_t>(0) = 0;
+    buffer.convert<uint16_t>(0) = TUN_F_CSUM;
 
     Buffer packet = buffer.slice(4);
 
@@ -49,6 +106,15 @@ bool RawPacketStream::prepare_tun_packet(Buffer buffer) {
         }
 
         buffer.convert<uint16_t>(2) = htons(0x0800);
+
+        // compute checksum
+        ip4_fill_checksum(packet);
+
+        int protocol = packet.convert<uint8_t>(9);
+
+        if (protocol == Protocol::UDP)
+            udp4_fill_checksum(packet);
+
         return true;
     } else if (version == 6) {
         buffer.convert<uint16_t>(2) = htons(0x86DD);
@@ -73,7 +139,7 @@ void RawPacketStream::send(const Buffer _data) {
 
     if (!prepare_tun_packet(packet)) return;
 
-    LOG ("output on wire packet " << packet);
+    DEBUG ("output on wire packet " << packet);
     if (tun_ptr)
         tun_ptr->send(packet);
 }
@@ -137,8 +203,13 @@ bool RawPacketStream::from_tun(Buffer packet) {
         return false;
     }
 
-    if (from_tun_queue.size() <= MAX_TUN_QUEUE_SIZE)
+    if (from_tun_queue.size() <= MAX_TUN_QUEUE_SIZE) {
         from_tun_queue.push_back(std::move(AllocBuffer::copy(packet)));
+        if (from_tun_queue.size() == 1)
+            on_recv_ready();
+    } else {
+        LOG ("overflow queue!");
+    }
 
     return true;
 }
