@@ -1,4 +1,5 @@
 
+* automatically enable forwarding (sysctl net.ipv4.ip_forward=1 )
 * better transport congestion control (SSH-like)
 * terminate: mark lwIP connections as accepted after server returns ok
 * Futures should print warning if they are destoryed unconsumed

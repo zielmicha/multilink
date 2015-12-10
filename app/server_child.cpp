@@ -8,6 +8,7 @@
 #include "multilink/transport_targets.h"
 #include "terminate/terminate.h"
 #include <boost/program_options.hpp>
+#include <random>
 
 namespace po = boost::program_options;
 
@@ -48,7 +49,14 @@ struct Server {
 
     void setup_tun(string tun_name) {
         TunPtr tun = Tun::create(reactor, tun_name);
-        terminator->set_tun(tun, "10.77.0.2");
+
+        uint32_t min_ip = IpAddress::parse4("10.128.0.1").addr4;
+        uint32_t max_ip = IpAddress::parse4("10.255.255.255").addr4;
+
+        std::random_device rng;
+        std::uniform_int_distribution<uint32_t> dist (ntohl(min_ip), ntohl(max_ip));
+
+        terminator->set_tun(tun, IpAddress::make4(htonl(dist(rng))).to_string());
     }
 
     void callback(std::shared_ptr<RPCStream> stream,
