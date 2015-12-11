@@ -13,6 +13,7 @@ namespace Multilink {
         Reactor& reactor;
 
         std::vector<std::unique_ptr<Link> > links;
+        std::unordered_map<Link*, std::function<void()> > link_on_close;
 
         std::deque<AllocBuffer> queue;
         std::unordered_map<Link*, std::deque<AllocBuffer> > assigned_packets;
@@ -31,7 +32,8 @@ namespace Multilink {
         Multilink(Reactor& reactor);
         Multilink(const Multilink& link) = delete;
 
-        Link& add_link(StreamPtr stream, std::string name = "default");
+        Link& add_link(StreamPtr stream, std::string name = "default",
+                       std::function<void()> on_close = nothing);
 
         bool is_send_ready();
 

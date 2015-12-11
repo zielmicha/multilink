@@ -22,6 +22,7 @@ const std::string CHILD_PATH = "./build/server_child";
 struct ProcessHandler {
     Reactor& reactor;
     string path;
+    string instance_id;
     ProcessPtr process;
 
     PacketStreamPtr main_stream;
@@ -33,7 +34,8 @@ struct ProcessHandler {
     ProcessHandler(Reactor& reactor, std::function<void()> on_close,
                    std::vector<string> child_options):
         reactor(reactor), on_close(on_close) {
-        path = "/tmp/.ml_" + random_hex_string(32);
+        instance_id = random_hex_string(32);
+        path = "/tmp/.ml_" + instance_id;
 
         FDPtr server_socket = UnixSocket::bind(reactor, path);
         server_socket->set_close_on_exec(false);
@@ -66,7 +68,9 @@ struct ProcessHandler {
                 { "name", name }
             }).ignore();
 
-        ioutil::read(raw_stream, 3).then([=](ByteString s) -> unit {
+        ioutil::write(stream, ByteString::copy_from(hex_decode(instance_id))).then([=](unit) {
+            return ioutil::read(raw_stream, 3);
+        }).then([=](ByteString s) -> unit {
             if (string(s) != "ok\n") {
                 LOG("unexpected response from app: " << s);
                 abort();
@@ -101,7 +105,7 @@ struct Server {
 
         TCP::listen(reactor, listen_host, listen_port, [&](FDPtr fd) {
             LOG("incoming connection");
-            auto stream = std::make_shared<TlsStream>(reactor, fd);
+            auto stream = TlsStream::create(reactor, fd);
             stream->set_cipher_list("PSK-AES256-CBC-SHA");
             stream->set_psk_server_callback(identity_callback);
             stream->handshake_as_server();

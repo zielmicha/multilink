@@ -29,12 +29,18 @@ TlsStream::TlsStream(Reactor& reactor, StreamPtr stream): reactor(reactor),
     SSL_set_bio(ssl, bio_in, bio_out);
 
     // SSL_set_verify(ssl, SSL_VERIFY_PEER, NULL);
+}
 
-    packet_stream->set_on_send_ready(std::bind(&TlsStream::transport_send_ready, this));
-    packet_stream->set_on_recv_ready(std::bind(&TlsStream::transport_recv_ready, this));
-    packet_stream->set_on_error([this]() {
-        this->on_error();
+TlsStreamPtr TlsStream::create(Reactor& reactor, StreamPtr stream) {
+    auto self = std::make_shared<TlsStream>(reactor, stream);
+
+    self->packet_stream->set_on_send_ready(std::bind(&TlsStream::transport_send_ready, self));
+    self->packet_stream->set_on_recv_ready(std::bind(&TlsStream::transport_recv_ready, self));
+    self->packet_stream->set_on_error([self]() {
+        self->on_error();
     });
+
+    return self;
 }
 
 TlsStream::~TlsStream() {
@@ -173,7 +179,7 @@ unsigned TlsStream::psk_client_callback(SSL *ssl, const char *hint,
                                         char *identity_out, unsigned int max_identity_len,
                                         unsigned char *psk_out, unsigned int max_psk_len) {
 
-    TlsStreamPtr self = (TlsStreamPtr)SSL_get_ex_data(ssl, tls_stream_index);
+    TlsStream* self = (TlsStream*) SSL_get_ex_data(ssl, tls_stream_index);
     IdentityAndPsk ret = self->client_psk_func(hint);
 
     Buffer psk = ret.psk.as_buffer();
@@ -196,7 +202,7 @@ void TlsStream::set_psk_client_callback(ClientPskFunc func) {
 
 unsigned TlsStream::psk_server_callback(SSL *ssl, const char *identity,
                                         unsigned char *psk_out, unsigned int max_psk_len) {
-    TlsStreamPtr self = (TlsStreamPtr)SSL_get_ex_data(ssl, tls_stream_index);
+    TlsStream* self = (TlsStream*) SSL_get_ex_data(ssl, tls_stream_index);
     ByteString psk_b = self->server_psk_func(identity);
     Buffer psk = psk_b.as_buffer();
 

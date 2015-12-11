@@ -11,7 +11,7 @@ int main() {
 
     TCP::listen(reactor, "127.0.0.1", 8800, [&](FDPtr fd) {
         LOG("incoming connection");
-        auto stream = std::make_shared<TlsStream>(reactor, fd);
+        auto stream = TlsStream::create(reactor, fd);
         stream->on_read_ready = nothing;
         stream->set_cipher_list("PSK-AES256-CBC-SHA");
         stream->set_psk_identity_hint("marianna");
@@ -26,7 +26,7 @@ int main() {
 
     TCP::connect(reactor, "127.0.0.1", 8800).then([&](FDPtr fd) -> Future<ByteString> {
         LOG("connected");
-        auto stream = std::make_shared<TlsStream>(reactor, fd);
+        auto stream = TlsStream::create(reactor, fd);
 
         stream->on_write_ready = nothing;
         stream->set_host_name("tls-test.example");

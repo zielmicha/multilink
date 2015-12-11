@@ -26,6 +26,8 @@ struct Client {
     int port;
     ByteString client_id;
     string identity, psk;
+    string instance_id;
+    std::function<void()> on_init;
 
     Client(string addr, int port, string identity, string psk):
         addr(addr), port(port), identity(identity), psk(psk) {
@@ -61,7 +63,7 @@ struct Client {
 
     void add_bind_address(string bind_addr) {
         TCP::connect(reactor, this->addr, this->port, bind_addr).then([=](StreamPtr stream) {
-            auto tls_stream = std::make_shared<TlsStream>(reactor, stream);
+            auto tls_stream = TlsStream::create(reactor, stream);
             tls_stream->handshake_as_client();
             tls_stream->set_psk_client_callback([this](const char* hint) {
                 return TlsStream::IdentityAndPsk
@@ -69,7 +71,17 @@ struct Client {
             });
             tls_stream->set_cipher_list("PSK-AES256-CBC-SHA");
             return ioutil::write(tls_stream, client_id).then([=](unit) {
-                ml->add_link(tls_stream, bind_addr);
+                return ioutil::read(tls_stream, 16);
+            }).then([=](ByteString instance_id_buff) {
+                string instance_id = instance_id_buff;
+                if (this->instance_id == "")
+                    this->instance_id = instance_id;
+                LOG("connected to instance " << hex_encode(instance_id));
+                if (this->instance_id == instance_id)
+                    ml->add_link(tls_stream, bind_addr);
+                else
+                    abort_instance();
+
                 return unit();
             });
         }).on_success_or_failure([=](unit) {
@@ -77,6 +89,13 @@ struct Client {
         }, [=](std::unique_ptr<std::exception> ex) {
             LOG("connection on " << bind_addr << " failed");
         });
+    }
+
+    void abort_instance() {
+        // new server instance appeared, restart everything
+        LOG("server restarted!");
+        instance_id = "";
+        on_init();
     }
 
     void enable_nm_integration() {
@@ -95,6 +114,7 @@ struct Client {
     }
 
     void run() {
+        on_init();
         reactor.run();
     }
 };
@@ -137,21 +157,23 @@ int main(int argc, char** argv) {
                    vm["identity"].as<string>(),
                    hex_decode(vm["psk"].as<string>()));
 
-    if (!vm["listen-port"].empty()) {
-        client.create_listening_target(vm["listen-port"].as<int>());
-    } else {
-        client.create_terminate_target(vm["tun-name"].as<string>());
-    }
-
-    if (nm_integration) {
-        client.enable_nm_integration();
-    }
-
-    if (vm.count("static")) {
-        for (string s : vm["static"].as<std::vector<string> >()) {
-            client.add_bind_address(s);
+    client.on_init = [&]() {
+        if (!vm["listen-port"].empty()) {
+            client.create_listening_target(vm["listen-port"].as<int>());
+        } else {
+            client.create_terminate_target(vm["tun-name"].as<string>());
         }
-    }
+
+        if (nm_integration) {
+            client.enable_nm_integration();
+        }
+
+        if (vm.count("static")) {
+            for (string s : vm["static"].as<std::vector<string> >()) {
+                client.add_bind_address(s);
+            }
+        }
+    };
 
     client.run();
 }

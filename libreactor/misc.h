@@ -9,5 +9,6 @@ void set_recv_buffer(FDPtr fd, int size);
 
 std::string random_hex_string(int length);
 std::string hex_decode(std::string s);
+std::string hex_encode(std::string value);
 
 #endif

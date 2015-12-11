@@ -6,3 +6,4 @@
   * + use `__attribute__((warn_unused_result))`
 * detect when server is restarted and drop existing connections
 * gracefully handle situation when there are no more FDs left
+* replace all std::bind(..., this) with std::bind(..., shared_from_this())

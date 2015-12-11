@@ -1,6 +1,8 @@
 #include "libreactor/misc.h"
 #include "libreactor/common.h"
 #include <random>
+#include <sstream>
+#include <iomanip>
 
 std::vector<FDPtr> fd_pair(Reactor& reactor) {
     int rawfds[2];
@@ -56,4 +58,16 @@ std::string hex_decode(std::string s) {
         ret[i / 2] = (a << 8) | b;
     }
     return ret;
+}
+
+std::string hex_encode(std::string value) {
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for(auto c: value) {
+        escaped << std::setw(2) << int((unsigned char) c);
+    }
+
+    return escaped.str();
 }

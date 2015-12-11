@@ -58,6 +58,7 @@ namespace Multilink {
         std::function<void()> on_send_ready_edge_fn;
 
         uint64_t in_flight_bytes = 0;
+
         struct InFlightPacket {
             InFlightPacket(uint64_t seq, AllocBuffer&& buffer, uint64_t transmit_time)
             : seq(seq), buffer(std::move(buffer)), transmit_time(transmit_time) {}
@@ -65,8 +66,8 @@ namespace Multilink {
             AllocBuffer buffer;
             uint64_t transmit_time;
         };
-        std::deque<InFlightPacket> in_flight_queue;
 
+        std::deque<InFlightPacket> in_flight_queue;
     public:
         Link(Reactor& reactor, StreamPtr stream);
         ~Link();
@@ -76,6 +77,9 @@ namespace Multilink {
 
         Stats rtt;
         BandwidthEstimator bandwidth;
+        bool timed_out = false;
+
+        std::vector<AllocBuffer> get_packets_to_retransmit();
 
         void display(std::ostream& stream) const;
 

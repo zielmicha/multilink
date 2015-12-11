@@ -42,10 +42,12 @@ namespace Multilink {
         return result;
     }
 
-    Link& Multilink::add_link(StreamPtr stream, std::string name) {
+    Link& Multilink::add_link(StreamPtr stream, std::string name,
+                              std::function<void()> on_close) {
         links.emplace_back(new Link(reactor, stream));
 
         Link* link = &(*links.back());
+        link_on_close[link] = on_close;
 
         link->on_recv_ready = std::bind(&Multilink::link_recv_ready, this, link);
         link->on_send_ready = std::bind(&Multilink::link_send_ready, this, link);
@@ -62,6 +64,30 @@ namespace Multilink {
     }
 
     void Multilink::link_send_ready(Link* link) {
+        if (link->timed_out) {
+            LOG("removing link " << *link);
+
+            for (AllocBuffer& packet : link->get_packets_to_retransmit())
+                queue.push_back(std::move(packet));
+            for (AllocBuffer& packet : assigned_packets[link])
+                queue.push_back(std::move(packet));
+
+            assigned_packets.erase(link);
+            auto func = link_on_close[link];
+            link_on_close.erase(link);
+
+            for (auto it=links.begin(); it != links.end(); it ++) {
+                if (&(**it) == link) {
+                    links.erase(it);
+                    break;
+                }
+            }
+
+            func();
+
+            return;
+        }
+
         while(true) {
             if(queue.size() < QUEUE_SIZE * 3 / 4) {
                 // queue not too full
@@ -95,7 +121,9 @@ namespace Multilink {
 
     void Multilink::some_link_send_ready() {
         shuffle_links();
-        for(auto& link: links) {
+        std::vector<Link*> copied_links;
+        for(auto& link : links) copied_links.push_back(&(*link));
+        for(auto& link : copied_links) {
             link_send_ready(&*link);
         }
     }
