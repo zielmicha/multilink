@@ -54,7 +54,8 @@ add_library(terminate STATIC
   terminate/tun.cpp
   terminate/terminate.cpp
   terminate/lwip_tcp.cpp
-  terminate/ippacket.cpp)
+  terminate/ippacket.cpp
+  terminate/address.cpp)
 
 include(tests/CMakeLists.txt)
 

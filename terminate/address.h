@@ -2,6 +2,8 @@
 #define TERMINATE_IP_H_
 #include <stdint.h>
 #include <string>
+#include <vector>
+#include <cstring>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -41,6 +43,8 @@ struct IpAddress {
             abort();
         }
     }
+
+    static std::vector<IpAddress> get_addresses();
 };
 
 #endif

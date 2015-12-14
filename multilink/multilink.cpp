@@ -84,6 +84,7 @@ namespace Multilink {
             }
 
             func();
+            reactor.schedule(std::bind(&Multilink::some_link_send_ready, this));
 
             return;
         }

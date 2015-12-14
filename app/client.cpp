@@ -2,6 +2,7 @@
 #include <boost/program_options.hpp>
 #include <unistd.h>
 #include <fstream>
+#include <set>
 #include "libreactor/logging.h"
 #include "libreactor/misc.h"
 #include "multilink/multilink.h"
@@ -28,9 +29,11 @@ struct Client {
     string identity, psk;
     string instance_id;
     std::function<void()> on_init;
+    std::multiset<string> running_links;
+    Timer timer;
 
     Client(string addr, int port, string identity, string psk):
-        addr(addr), port(port), identity(identity), psk(psk) {
+        addr(addr), port(port), identity(identity), psk(psk), timer(reactor) {
         ml = std::make_shared<Multilink::Multilink>(reactor);
         client_id = ByteString::copy_from(hex_decode(random_hex_string(32)));
     }
@@ -62,6 +65,11 @@ struct Client {
     }
 
     void add_bind_address(string bind_addr) {
+        if (running_links.find(bind_addr) != running_links.end())
+            return;
+
+        LOG ("add bind address: " << bind_addr);
+        running_links.insert(bind_addr);
         TCP::connect(reactor, this->addr, this->port, bind_addr).then([=](StreamPtr stream) {
             auto tls_stream = TlsStream::create(reactor, stream);
             tls_stream->handshake_as_client();
@@ -78,7 +86,8 @@ struct Client {
                     this->instance_id = instance_id;
                 LOG("connected to instance " << hex_encode(instance_id));
                 if (this->instance_id == instance_id)
-                    ml->add_link(tls_stream, bind_addr);
+                    ml->add_link(tls_stream, bind_addr,
+                                 std::bind(&Client::link_closed, this, bind_addr));
                 else
                     abort_instance();
 
@@ -88,13 +97,21 @@ struct Client {
             LOG("connection on " << bind_addr << " established");
         }, [=](std::unique_ptr<std::exception> ex) {
             LOG("connection on " << bind_addr << " failed");
+            link_closed(bind_addr);
         });
+    }
+
+    void link_closed(string bind_addr) {
+        if (running_links.find(bind_addr) != running_links.end())
+            running_links.erase(running_links.find(bind_addr));
+        timer.once(2000 * 1000, std::bind(&Client::add_bind_address, this, bind_addr));
     }
 
     void abort_instance() {
         // new server instance appeared, restart everything
         LOG("server restarted!");
         instance_id = "";
+        // FIXME: we need to ensure that there are no outstanding scheduled functions
         on_init();
     }
 
@@ -107,10 +124,22 @@ struct Client {
         pid_file.close();
 
         Popen(reactor, "./scripts/network-manager-setup.sh").check_call().wait(reactor);
+        reload_nm();
     }
 
     void reload_nm() {
         LOG("reloading interface list");
+
+        std::vector<string> missing;
+        for (IpAddress addr_obj : IpAddress::get_addresses()) {
+            string addr = addr_obj.to_string();
+            if (running_links.find(addr) == running_links.end()) {
+                missing.push_back(addr);
+            }
+        }
+
+        for (string addr : missing)
+            add_bind_address(addr);
     }
 
     void run() {
