@@ -74,7 +74,7 @@ void TlsStream::transport_send_ready() {
 void TlsStream::transport_recv_ready() {
     bool anything = false;
 
-    while (BIO_ctrl_wpending(bio_in) < MAX_BIO_BUFFER) {
+    while (BIO_ctrl_pending(bio_in) < MAX_BIO_BUFFER) {
         optional<Buffer> buffer = packet_stream->recv();
         if (!buffer) break;
 
@@ -108,6 +108,9 @@ bool TlsStream::handle_ssl_want(int err) {
 }
 
 size_t TlsStream::write(const Buffer buffer) {
+    if (BIO_ctrl_pending(bio_out) >= MAX_BIO_BUFFER)
+        return 0;
+
     DEBUG("SSL_write size=" << buffer.size);
     int ret = SSL_write(ssl, buffer.data, buffer.size);
 
