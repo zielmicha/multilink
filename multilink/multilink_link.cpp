@@ -254,7 +254,7 @@ namespace Multilink {
 
             rtt.add_and_remove_back((int)delta);
 
-            DEBUG(*this <<
+            LOG(*this <<
                   " pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
                   << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
             last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);

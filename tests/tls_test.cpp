@@ -24,6 +24,15 @@ int main() {
         stream->handshake_as_server();
         LOG("before write");
         ioutil::write(stream, ByteString::copy_from("helo"));
+
+        stream->on_read_ready = [stream]() {
+            AllocBuffer buffer (4096);
+            while (true) {
+                Buffer data = stream->read(buffer.as_buffer());
+                if (data.size == 0) break;
+            }
+        };
+
         streams.push_back(stream);
     }).ignore();
 
@@ -41,6 +50,7 @@ int main() {
                                                  ByteString::copy_from("1234567890"));
             });
             stream->handshake_as_client();
+
             return stream;
         }).wait(reactor);
 

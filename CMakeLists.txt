@@ -4,7 +4,7 @@ project(Link)
 # clang has linking problems on Ubuntu 15.10
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
-set(OPT_COMMON "-fsanitize=address")
+#set(OPT_COMMON "-fsanitize=address") <- ASan seems to leak memory
 # set(OPT_COMMON "")
 # for clang++: -Wno-unused-private-field -D_GLIBCXX_DEBUG
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -fdiagnostics-color -Og ${OPT_COMMON} -Wno-literal-suffix")

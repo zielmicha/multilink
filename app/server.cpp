@@ -46,29 +46,30 @@ struct ProcessHandler {
         process = Popen(reactor, args).exec();
         server_socket->close();
 
-        main_stream = LengthPacketStream::create(reactor, UnixSocket::connect(reactor, path));
-        main_stream->set_on_send_ready(nothing);
-        main_stream->set_on_recv_ready(nothing);
         multilink_num = 0;
     }
 
     ProcessHandler(const ProcessHandler& other) = delete;
 
-    Future<unit> send_message(PacketStreamPtr stream, Json value) {
-        return ioutil::send(stream, ByteString::copy_from(value.dump()));
+    Future<unit> send_message(StreamPtr stream, Json value) {
+        ByteString length (4);
+        ByteString msg = ByteString::copy_from(value.dump());
+        length.as_buffer().convert<uint32_t>(0) = msg.size();
+        return ioutil::write(stream, length).then([=](unit) -> unit {
+            ioutil::write(stream, msg);
+            return {};
+        });
     }
 
     void add_link(StreamPtr stream, string name) {
         auto raw_stream = UnixSocket::connect(reactor, path);
-        auto control_stream = LengthPacketStream::create(reactor, raw_stream);
 
-        control_stream->set_on_send_ready(nothing);
-        send_message(control_stream, Json::object {
+        send_message(raw_stream, Json::object {
                 { "type", "add-link" },
                 { "name", name }
-            }).ignore();
-
-        ioutil::write(stream, ByteString::copy_from(hex_decode(instance_id))).then([=](unit) {
+        }).then([=](unit) {
+            return ioutil::write(stream, ByteString::copy_from(hex_decode(instance_id)));
+        }).then([=](unit) {
             return ioutil::read(raw_stream, 3);
         }).then([=](ByteString s) -> unit {
             if (string(s) != "ok\n") {
