@@ -51,7 +51,7 @@ namespace Multilink {
 
     void BandwidthEstimator::data_written(uint64_t time, uint64_t bytes) {
         if(burst_running || time < burst_ends_at) {
-            burst_ends_at = true;
+            //burst_ends_at = true;
 
             transmitted.push_back({time, bytes});
             transmit_size += bytes;
