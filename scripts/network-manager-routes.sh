@@ -31,6 +31,8 @@ case $2 in
 
     down)
         ip rule del table $(get_table_num "$1")
+
+        [[ -e "$IFACE_NOTIFY_PID" ]] && kill -USR1 "$(cat "$IFACE_NOTIFY_PID")"
     ;;
 
     *)

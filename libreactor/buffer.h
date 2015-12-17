@@ -29,6 +29,8 @@ public:
 class Buffer {
 public:
     Buffer(char* data, size_t size): size(size), data(data) {}
+    explicit Buffer(const std::string& s)
+        : size(s.size()), data(const_cast<char*>(s.data())) {}
 
     size_t size;
     char* data;

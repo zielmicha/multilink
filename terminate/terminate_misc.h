@@ -127,7 +127,7 @@ public:
     optional<Buffer> recv() {
         if (!header_recved) {
             header_recved = true;
-            return Buffer(header);
+            return header.as_buffer();
         } else {
             return new_stream->recv();
         }

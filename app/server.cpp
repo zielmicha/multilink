@@ -111,9 +111,13 @@ struct Server {
             stream->set_psk_server_callback(identity_callback);
             stream->handshake_as_server();
 
-            ioutil::read(stream, 16).then([this, stream](ByteString multilink_id) -> unit {
+            ioutil::read(stream, 128).then([this, stream](ByteString welcome) -> unit {
                 // TODO: check identity
-                get_or_create(multilink_id).add_link(stream, "link");
+                string multilink_id = welcome.as_buffer().slice(0, 16);
+                string link_name = welcome.as_buffer().slice(16);
+                while (link_name.back() == 0) link_name.pop_back();
+
+                get_or_create(multilink_id).add_link(stream, link_name);
                 return {};
             }).ignore();
         }).ignore();

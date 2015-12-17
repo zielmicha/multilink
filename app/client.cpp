@@ -78,7 +78,13 @@ struct Client {
                     (ByteString::copy_from(identity), ByteString::copy_from(psk));
             });
             tls_stream->set_cipher_list("PSK-AES256-CBC-SHA");
-            return ioutil::write(tls_stream, client_id).then([=](unit) {
+
+            ByteString welcome (128);
+            welcome.as_buffer().set_zero();
+            welcome.as_buffer().slice(0, 16).copy_from(client_id);
+            welcome.as_buffer().slice(16).copy_from(Buffer(bind_addr));
+
+            return ioutil::write(tls_stream, welcome).then([=](unit) {
                 return ioutil::read(tls_stream, 16);
             }).then([=](ByteString instance_id_buff) {
                 string instance_id = instance_id_buff;

@@ -20,6 +20,9 @@ namespace Multilink {
         stream->set_on_write_ready(std::bind(&Link::transport_write_ready, this, true));
         reactor.schedule(std::bind(&Link::timer_callback, this));
 
+        // start with a very large RTT
+        rtt.add_and_remove_back(5000 * 1000);
+
         on_send_ready_edge_fn = [this]() {
             send_buffer_edge = true;
 
@@ -47,7 +50,8 @@ namespace Multilink {
         // Retransmit packets that haven't been acknowledged for more than few seconds.
         // TODO: replace with something that makes more sense (retramission timeout
         // based on RTTs)
-        const uint64_t RETRANSMISSION_TIMEOUT = 2000 * 1000;
+        // TODO: disconnect if there are packets queued and RTT > 5*RTT of other link?
+        const uint64_t RETRANSMISSION_TIMEOUT = 4000 * 1000;
 
         if (in_flight_queue.empty()) return;
 
@@ -254,10 +258,13 @@ namespace Multilink {
 
             rtt.add_and_remove_back((int)delta);
 
+            uint64_t new_last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
+
             LOG(*this <<
                   " pong delta=" << delta << " rtt=" << rtt.mean()/1000 << " dev=" << rtt.stddev()/1000
-                  << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps");
-            last_pong_recv_seq = data.convert<uint64_t>(HEADER_SIZE + 8);
+                << " bandwidth=" << (int)(bandwidth.bandwidth_mbps() * 8) << "Mbps"
+                << " packets=" << (new_last_pong_recv_seq - last_pong_recv_seq));
+            last_pong_recv_seq = new_last_pong_recv_seq;
             last_pong_recv_time = Timer::get_time();
 
             flush_in_flight_queue();

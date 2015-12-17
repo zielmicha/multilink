@@ -207,7 +207,7 @@ namespace Multilink {
 
         DEBUG("assigned max time " << max_time);
         for(size_t i = 0; i < links.size(); i ++) {
-            LOG("assigned " << num_assigned[i] << " to " << *links[i] << " total "
+            DEBUG("assigned " << num_assigned[i] << " to " << *links[i] << " total "
                   << assigned_packets[&*(links[i])].size());
         }
     }

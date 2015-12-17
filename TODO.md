@@ -10,3 +10,5 @@
 * seccomp
 * crash still possible after removing (heap-use-after-free)
 * removing link seems to cause memory leak (rather large)
+* timeout TLS connections
+* sleep mode
