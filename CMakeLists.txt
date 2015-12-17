@@ -8,6 +8,10 @@ set(CMAKE_C_COMPILER "/usr/bin/gcc")
 # set(OPT_COMMON "")
 # for clang++: -Wno-unused-private-field -D_GLIBCXX_DEBUG
 set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -fdiagnostics-color -Og ${OPT_COMMON} -Wno-literal-suffix")
+if (VALGRIND_INTEGRATION EQUAL "1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVALGRIND_INTEGRATION")
+  message("-- Enabling Valgrind integration")
+endif()
 set(CMAKE_C_FLAGS "-std=c11 -D_GNU_SOURCE")
 set(CMAKE_EXE_LINKER_FLAGS "-rdynamic -lrt ${OPT_COMMON}")
 

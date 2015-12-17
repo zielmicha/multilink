@@ -6,6 +6,13 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 
+#ifdef VALGRIND_INTEGRATION
+#include <valgrind/memcheck.h>
+#else
+#define VALGRIND_CHECK_MEM_IS_DEFINED(addr, len) (void)0
+#define VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(addr, len) (void)0
+#endif
+
 static SSL_CTX* ssl_context;
 static int tls_stream_index;
 
@@ -79,6 +86,8 @@ void TlsStream::transport_recv_ready() {
         if (!buffer) break;
 
         anything = true;
+
+        VALGRIND_CHECK_MEM_IS_DEFINED(buffer->data, buffer->size);
         int ret = BIO_write(bio_in, buffer->data, buffer->size);
         assert(ret >= 0);
     }
@@ -150,6 +159,7 @@ Buffer TlsStream::read(Buffer out) {
         if (ret == 0)
             break;
 
+        VALGRIND_MAKE_MEM_DEFINED_IF_ADDRESSABLE(out.data + pointer, ret);
         pointer += ret;
     }
 

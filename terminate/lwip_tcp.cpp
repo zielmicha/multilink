@@ -105,6 +105,7 @@ NetworkInterfaceImpl::NetworkInterfaceImpl(Reactor& reactor):
         return ERR_OK;
     };
 
+    memset(&iface, 0, sizeof(iface));
     bool ok = netif_add(&iface, &addr, &netmask, &gw, (void*) this, netif_init_func, netif_input_func);
     assert (ok);
 

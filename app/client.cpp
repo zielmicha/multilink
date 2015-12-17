@@ -139,6 +139,7 @@ struct Client {
         std::vector<string> missing;
         for (IpAddress addr_obj : IpAddress::get_addresses()) {
             string addr = addr_obj.to_string();
+            LOG("detected address: " << addr);
             if (running_links.find(addr) == running_links.end()) {
                 missing.push_back(addr);
             }
