@@ -29,6 +29,7 @@ namespace Multilink {
         AllocBuffer send_buffer;
         Buffer send_buffer_current;
         bool send_buffer_edge = true;
+        bool bufferbloat_avoidance = false;
 
         uint64_t last_ping_sent = 0;
         uint64_t last_pong_request_time = 0;
@@ -47,6 +48,7 @@ namespace Multilink {
         void flush_in_flight_queue();
         void maybe_retransmit();
 
+        void bufferbloat_check();
         bool should_ping();
         void send_ping();
         void send_pong();

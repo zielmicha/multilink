@@ -7,6 +7,9 @@ namespace Multilink {
     const size_t MTU = Multilink::LINK_MTU;
     const uint64_t PING_INTERVAL = 1000 * 1000 / 4;
 
+    const uint64_t BUFFERBLOAT_LOW_MARK = 2000 * 1000;
+    const uint64_t BUFFERBLOAT_HIGH_MARK = 3000 * 1000;
+
     Link::Link(Reactor& reactor, StreamPtr stream): reactor(reactor),
                                                     stream(stream),
                                                     timer(reactor),
@@ -48,12 +51,13 @@ namespace Multilink {
     void Link::maybe_retransmit() {
         if (timed_out) return; // already timed out
         // Retransmit packets that haven't been acknowledged for more than few seconds.
+        // TODO: how this interacts with bufferbloat avoidance?
         // TODO: replace with something that makes more sense (retramission timeout
         // based on RTTs)
         // TODO: disconnect if there are packets queued and RTT > 5*RTT of other link?
-        const uint64_t RETRANSMISSION_TIMEOUT = 4000 * 1000;
+        const uint64_t RETRANSMISSION_TIMEOUT = 8000 * 1000;
 
-        if (in_flight_queue.empty()) return;
+        if (in_flight_queue.empty() && !bufferbloat_avoidance) return;
 
         uint64_t first_send_time = in_flight_queue.front().transmit_time;
         if (Timer::get_time() - first_send_time > RETRANSMISSION_TIMEOUT) {
@@ -118,6 +122,8 @@ namespace Multilink {
 
     bool Link::send(uint64_t seq, AllocBuffer& data) {
         if (timed_out) return false;
+        if (bufferbloat_avoidance) return false;
+
         DEBUG(*this << " attempt to send " << data.size);
         if(!send_aux()) {
             assert(seq > last_seq_sent);
@@ -267,9 +273,26 @@ namespace Multilink {
             last_pong_recv_seq = new_last_pong_recv_seq;
             last_pong_recv_time = Timer::get_time();
 
+            bufferbloat_check();
             flush_in_flight_queue();
         } else {
             ERROR("unknown packet received: " << data);
+        }
+    }
+
+    void Link::bufferbloat_check() {
+        int rtt = this->rtt.mean();
+        if (bufferbloat_avoidance) {
+            if (rtt < BUFFERBLOAT_LOW_MARK) {
+                LOG(*this << " bufferbloat avoidance: off");
+                bufferbloat_avoidance = false;
+                reactor.schedule(on_send_ready);
+            }
+        } else {
+            if (rtt > BUFFERBLOAT_HIGH_MARK) {
+                LOG(*this << " bufferbloat avoidance: on");
+                bufferbloat_avoidance = true;
+            }
         }
     }
 
